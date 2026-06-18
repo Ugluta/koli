@@ -1,39 +1,48 @@
 # Koli Şehir Rehberi
 
-A large-scale city directory portal — discover businesses, products, and services in your city.
+Kurumsal, yüksek performanslı, SEO odaklı şehir ve firma rehberi platformu.
 
-## Prerequisites
+## Önkoşullar
 
 - Node.js 20+
 - Docker & Docker Compose
 
-## Quick Start
+## Hızlı Başlangıç
 
 ```bash
-# Start infrastructure services
+# 1. Altyapıyı başlat
 docker-compose -f infrastructure/docker/docker-compose.yml up -d
 
-# Copy environment files
+# 2. Ortam değişkenlerini kopyala
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.local.example apps/web/.env.local
 
-# Install dependencies
+# 3. Bağımlılıkları yükle
 npm install
 
-# Start development servers
+# 4. Geliştirme sunucularını başlat
 npm run dev
 ```
 
-## Apps
+## Servisler
 
-- **apps/api** — NestJS REST API (port 4000), Swagger docs at http://localhost:4000/docs
-- **apps/web** — Next.js frontend (port 3000)
+| Servis | URL |
+|--------|-----|
+| Next.js Web | http://localhost:3000 |
+| NestJS API | http://localhost:4000 |
+| API Docs (Swagger) | http://localhost:4000/docs |
+| Meilisearch | http://localhost:7700 |
+| MinIO Console | http://localhost:9001 |
 
-## Infrastructure (Docker)
+## Uygulama Yapısı
 
-| Service      | Port  | Description          |
-|-------------|-------|----------------------|
-| PostgreSQL   | 5432  | Primary database     |
-| Redis        | 6379  | Cache / queues       |
-| Meilisearch  | 7700  | Full-text search     |
-| MinIO        | 9000/9001 | Object storage  |
+```
+apps/
+  api/     — NestJS backend (port 4000)
+  web/     — Next.js frontend (port 3000)
+packages/
+  shared-types/  — Ortak TypeScript tipleri
+infrastructure/
+  docker/  — Docker Compose konfigürasyonu
+  nginx/   — Nginx konfigürasyonu
+```
