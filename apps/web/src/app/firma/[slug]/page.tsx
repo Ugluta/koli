@@ -1,6 +1,9 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { localBusinessJsonLd, breadcrumbJsonLd } from '@/lib/seo/jsonld';
+
+const BusinessMap = dynamic(() => import('@/components/map/BusinessMap').then(m => m.BusinessMap), { ssr: false });
 
 interface Props {
   params: { slug: string };
@@ -132,14 +135,19 @@ export default async function FirmaDetailPage({ params }: Props) {
             <h2 className="text-xl font-semibold mb-3">Adres</h2>
             <p className="text-gray-700">{business.location.addressLine1}</p>
             {business.location.latitude && business.location.longitude && (
-              <a
-                href={`https://maps.google.com/?q=${business.location.latitude},${business.location.longitude}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-blue-600 text-sm mt-2 hover:underline"
-              >
-                📍 Haritada Gör
-              </a>
+              <>
+                <a
+                  href={`https://maps.google.com/?q=${business.location.latitude},${business.location.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-blue-600 text-sm mt-2 hover:underline"
+                >
+                  📍 Haritada Gör
+                </a>
+                <div className="mt-4">
+                  <BusinessMap lat={Number(business.location.latitude)} lng={Number(business.location.longitude)} name={business.name} />
+                </div>
+              </>
             )}
           </section>
         )}

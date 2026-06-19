@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Business, BusinessStatus } from './entities/business.entity';
 import { BusinessLocation } from './entities/business-location.entity';
+import { BusinessHours } from './entities/business-hours.entity';
+import { BusinessSocialLink, SocialPlatform } from './entities/business-social-link.entity';
 import { CreateBusinessDto } from './dto/create-business.dto';
+import { UpdateBusinessDto } from './dto/update-business.dto';
 import { SearchService } from '../search/search.service';
 
 function slugify(text: string): string {
@@ -178,5 +181,69 @@ export class BusinessesService {
     if (!business) throw new NotFoundException('Business not found');
     if (business.ownerId !== userId) throw new ForbiddenException('Access denied');
     return business;
+  }
+
+  async findOwned(ownerId: string): Promise<Business[]> {
+    return this.businessesRepo.find({
+      where: { ownerId },
+      relations: ['location', 'location.city', 'hours', 'socialLinks'],
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async update(id: string, ownerId: string, dto: UpdateBusinessDto): Promise<Business> {
+    await this.assertOwner(id, ownerId);
+    return this.dataSource.transaction(async (manager) => {
+      const { cityId, districtId, addressLine1, addressLine2, postalCode, latitude, longitude, categoryIds, ...bizDto } = dto;
+      await manager.update(Business, id, bizDto);
+
+      if (cityId !== undefined || latitude !== undefined || addressLine1 !== undefined) {
+        await manager.upsert(BusinessLocation, {
+          businessId: id,
+          ...(cityId !== undefined ? { cityId } : {}),
+          ...(districtId !== undefined ? { districtId } : {}),
+          ...(addressLine1 !== undefined ? { addressLine1 } : {}),
+          ...(addressLine2 !== undefined ? { addressLine2 } : {}),
+          ...(postalCode !== undefined ? { postalCode } : {}),
+          ...(latitude !== undefined ? { latitude } : {}),
+          ...(longitude !== undefined ? { longitude } : {}),
+        }, ['businessId']);
+      }
+
+      if (categoryIds !== undefined) {
+        await manager.query(`DELETE FROM business_categories WHERE business_id = $1`, [id]);
+        for (let i = 0; i < categoryIds.length; i++) {
+          await manager.query(
+            `INSERT INTO business_categories (business_id, category_id, is_primary) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+            [id, categoryIds[i], i === 0],
+          );
+        }
+      }
+
+      return manager.findOneOrFail(Business, {
+        where: { id },
+        relations: ['location', 'location.city', 'hours', 'socialLinks'],
+      });
+    });
+  }
+
+  async upsertHours(businessId: string, ownerId: string, hours: Array<{ dayOfWeek: number; openTime?: string; closeTime?: string; isClosed?: boolean; is24h?: boolean }>): Promise<void> {
+    await this.assertOwner(businessId, ownerId);
+    await this.dataSource.transaction(async (manager) => {
+      await manager.delete(BusinessHours, { businessId });
+      for (const h of hours) {
+        await manager.save(BusinessHours, manager.create(BusinessHours, { businessId, ...h }));
+      }
+    });
+  }
+
+  async upsertSocialLinks(businessId: string, ownerId: string, links: Array<{ platform: SocialPlatform; url: string }>): Promise<void> {
+    await this.assertOwner(businessId, ownerId);
+    await this.dataSource.transaction(async (manager) => {
+      await manager.delete(BusinessSocialLink, { businessId });
+      for (let i = 0; i < links.length; i++) {
+        await manager.save(BusinessSocialLink, manager.create(BusinessSocialLink, { businessId, ...links[i], sortOrder: i }));
+      }
+    });
   }
 }

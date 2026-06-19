@@ -15,6 +15,8 @@ import { MediaService } from '../media/media.service';
 import { BusinessMedia } from '../businesses/entities/business-media.entity';
 import { CreateProductDto, UpdateProductDto } from '../products/dto/product.dto';
 import { CreateServiceDto, UpdateServiceDto } from '../services/dto/service.dto';
+import { CreateBusinessDto } from '../businesses/dto/create-business.dto';
+import { UpdateBusinessDto } from '../businesses/dto/update-business.dto';
 
 class PresignedUploadDto {
   folder: string;
@@ -45,6 +47,45 @@ export class PanelController {
     private mediaService: MediaService,
     @InjectRepository(BusinessMedia) private galleryRepo: Repository<BusinessMedia>,
   ) {}
+
+  // ── Business detail & edit ────────────────────────────────────────
+  @Get()
+  @ApiOperation({ summary: 'Get business detail (owner view)' })
+  async getDetail(@Param('businessId', ParseUUIDPipe) businessId: string, @CurrentUser() user: User) {
+    return this.businessesService.findById(businessId, user.id);
+  }
+
+  @Patch()
+  @ApiOperation({ summary: 'Update business' })
+  async update(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @Body() dto: UpdateBusinessDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.businessesService.update(businessId, user.id, dto);
+  }
+
+  @Patch('hours')
+  @ApiOperation({ summary: 'Replace all business hours' })
+  async updateHours(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @Body() body: { hours: Array<{ dayOfWeek: number; openTime?: string; closeTime?: string; isClosed?: boolean; is24h?: boolean }> },
+    @CurrentUser() user: User,
+  ) {
+    await this.businessesService.upsertHours(businessId, user.id, body.hours);
+    return { ok: true };
+  }
+
+  @Patch('social-links')
+  @ApiOperation({ summary: 'Replace all social links' })
+  async updateSocialLinks(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @Body() body: { links: Array<{ platform: string; url: string }> },
+    @CurrentUser() user: User,
+  ) {
+    await this.businessesService.upsertSocialLinks(businessId, user.id, body.links as any);
+    return { ok: true };
+  }
 
   // ── Stats ──────────────────────────────────────────────────────────
   @Get('stats')
@@ -217,5 +258,24 @@ export class PanelController {
       dto.filename,
       dto.mimeType,
     );
+  }
+}
+
+@ApiTags('panel')
+@ApiBearerAuth()
+@Controller('panel/businesses')
+export class PanelBusinessListController {
+  constructor(private businessesService: BusinessesService) {}
+
+  @Get()
+  @ApiOperation({ summary: "List caller's businesses" })
+  list(@CurrentUser() user: User) {
+    return this.businessesService.findOwned(user.id);
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Create a business' })
+  create(@Body() dto: CreateBusinessDto, @CurrentUser() user: User) {
+    return this.businessesService.create(dto, user.id);
   }
 }

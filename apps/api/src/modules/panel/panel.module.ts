@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PanelController } from './panel.controller';
+import { PanelController, PanelBusinessListController } from './panel.controller';
 import { BusinessesModule } from '../businesses/businesses.module';
 import { ProductsModule } from '../products/products.module';
 import { ServicesModule } from '../services/services.module';
@@ -13,6 +13,6 @@ import { BusinessMedia } from '../businesses/entities/business-media.entity';
     TypeOrmModule.forFeature([BusinessMedia]),
     BusinessesModule, ProductsModule, ServicesModule, MembershipModule, MediaModule,
   ],
-  controllers: [PanelController],
+  controllers: [PanelController, PanelBusinessListController],
 })
 export class PanelModule {}
