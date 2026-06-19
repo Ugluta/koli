@@ -14,6 +14,7 @@ import { MembershipModule } from './modules/membership/membership.module';
 import { MediaModule } from './modules/media/media.module';
 import { PanelModule } from './modules/panel/panel.module';
 import { PostsModule } from './modules/posts/posts.module';
+import { SeoModule } from './modules/seo/seo.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { PostsModule } from './modules/posts/posts.module';
     MediaModule,
     PanelModule,
     PostsModule,
+    SeoModule,
   ],
 })
 export class AppModule {}

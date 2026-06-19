@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const PROTECTED_PATHS = ['/panel', '/admin'];
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 const LOCALE_TO_CITY: Record<string, string> = {
   tr: 'istanbul',
@@ -29,7 +30,7 @@ function detectLocale(acceptLanguage: string | null): string {
   return primary ?? 'tr';
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect panel and admin routes
@@ -51,9 +52,29 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/${citySlug}`, request.url));
   }
 
+  // SEO redirect table lookup (skip static assets and API routes)
+  if (!pathname.startsWith('/_next') && !pathname.startsWith('/api') && !pathname.includes('.')) {
+    try {
+      const res = await fetch(
+        `${API_URL}/seo/redirect?path=${encodeURIComponent(pathname)}`,
+        { next: { revalidate: 300 } },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.toPath) {
+          return NextResponse.redirect(new URL(data.toPath, request.url), {
+            status: data.statusCode ?? 301,
+          });
+        }
+      }
+    } catch {
+      // network error — continue normally
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/', '/panel/:path*', '/admin/:path*'],
+  matcher: ['/', '/panel/:path*', '/admin/:path*', '/((?!_next/static|_next/image|favicon.ico).*)'],
 };

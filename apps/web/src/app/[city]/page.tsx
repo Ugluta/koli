@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { cityDirectoryJsonLd, breadcrumbJsonLd } from '@/lib/seo/jsonld';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
@@ -41,7 +42,16 @@ export default async function CityPage({ params }: { params: { city: string } })
   const businesses = await getBusinesses(params.city);
   const items: any[] = businesses.data ?? [];
 
+  const jsonLd = cityDirectoryJsonLd(city);
+  const breadcrumb = breadcrumbJsonLd([
+    { name: 'Ana Sayfa', url: '/' },
+    { name: `${city.name} Rehberi`, url: `/${params.city}` },
+  ]);
+
   return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
@@ -91,5 +101,6 @@ export default async function CityPage({ params }: { params: { city: string } })
         </section>
       </div>
     </main>
+    </>
   );
 }
