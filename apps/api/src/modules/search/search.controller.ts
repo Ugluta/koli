@@ -19,6 +19,7 @@ export class SearchController {
   searchBusinesses(
     @Query('q') q: string,
     @Query('city') citySlug?: string,
+    @Query('country') countrySlug?: string,
     @Query('category') categoryId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -26,7 +27,25 @@ export class SearchController {
     return this.searchService.searchBusinesses({
       q: q ?? '',
       citySlug,
+      countrySlug,
       categoryId,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? Math.min(parseInt(limit, 10), 50) : 20,
+    });
+  }
+
+  @Get('products')
+  searchProducts(
+    @Query('q') q: string,
+    @Query('city') citySlug?: string,
+    @Query('country') countrySlug?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.searchService.searchProducts({
+      q: q ?? '',
+      citySlug,
+      countrySlug,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? Math.min(parseInt(limit, 10), 50) : 20,
     });

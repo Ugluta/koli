@@ -38,7 +38,7 @@ export class SearchService implements OnModuleInit {
     const bizIndex = this.client.index(BUSINESSES_INDEX);
     await bizIndex.updateSettings({
       searchableAttributes: ['name', 'shortDescription', 'description', 'categoryNames', 'cityName'],
-      filterableAttributes: ['citySlug', 'categoryIds', 'status', 'isFeatured'],
+      filterableAttributes: ['citySlug', 'countrySlug', 'categoryIds', 'status', 'isFeatured'],
       sortableAttributes: ['createdAt', 'viewCount'],
       rankingRules: ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness'],
     });
@@ -67,11 +67,13 @@ export class SearchService implements OnModuleInit {
                 b.description, b.status, b.is_featured AS "isFeatured",
                 b.view_count AS "viewCount", b.created_at AS "createdAt",
                 c.slug AS "citySlug", c.name AS "cityName",
+                co.slug AS "countrySlug", co.name AS "countryName",
                 COALESCE(array_agg(cat.name) FILTER (WHERE cat.name IS NOT NULL), '{}') AS "categoryNames",
                 COALESCE(array_agg(cat.id::text) FILTER (WHERE cat.id IS NOT NULL), '{}') AS "categoryIds"
          FROM businesses b
          LEFT JOIN business_locations bl ON bl.business_id = b.id
          LEFT JOIN cities c ON c.id = bl.city_id
+         LEFT JOIN countries co ON co.id = c.country_id
          LEFT JOIN business_categories bc ON bc.business_id = b.id
          LEFT JOIN categories cat ON cat.id = bc.category_id
          WHERE b.id = $1
@@ -130,15 +132,17 @@ export class SearchService implements OnModuleInit {
               b.description, b.status, b.is_featured AS "isFeatured",
               b.view_count AS "viewCount", b.created_at AS "createdAt",
               c.slug AS "citySlug", c.name AS "cityName",
+              co.slug AS "countrySlug", co.name AS "countryName",
               COALESCE(array_agg(cat.name) FILTER (WHERE cat.name IS NOT NULL), '{}') AS "categoryNames",
               COALESCE(array_agg(cat.id::text) FILTER (WHERE cat.id IS NOT NULL), '{}') AS "categoryIds"
        FROM businesses b
        LEFT JOIN business_locations bl ON bl.business_id = b.id
        LEFT JOIN cities c ON c.id = bl.city_id
+       LEFT JOIN countries co ON co.id = c.country_id
        LEFT JOIN business_categories bc ON bc.business_id = b.id
        LEFT JOIN categories cat ON cat.id = bc.category_id
        WHERE b.deleted_at IS NULL
-       GROUP BY b.id, c.slug, c.name
+       GROUP BY b.id, c.slug, c.name, co.slug, co.name
        LIMIT 50000`,
     );
     if (rows.length) {
@@ -180,13 +184,15 @@ export class SearchService implements OnModuleInit {
   async searchBusinesses(params: {
     q: string;
     citySlug?: string;
+    countrySlug?: string;
     categoryId?: string;
     page?: number;
     limit?: number;
   }) {
-    const { q, citySlug, categoryId, page = 1, limit = 20 } = params;
+    const { q, citySlug, countrySlug, categoryId, page = 1, limit = 20 } = params;
     const filters: string[] = ['status = "active"'];
     if (citySlug) filters.push(`citySlug = "${citySlug}"`);
+    if (countrySlug) filters.push(`countrySlug = "${countrySlug}"`);
     if (categoryId) filters.push(`categoryIds = "${categoryId}"`);
 
     const result = await this.client.index(BUSINESSES_INDEX).search(q, {
@@ -229,6 +235,55 @@ export class SearchService implements OnModuleInit {
       data: result.hits,
       meta: { total: result.estimatedTotalHits, page, limit, processingTimeMs: result.processingTimeMs },
     };
+  }
+
+  async searchProducts(params: {
+    q: string;
+    citySlug?: string;
+    countrySlug?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const { q, citySlug, countrySlug, page = 1, limit = 20 } = params;
+    const offset = (page - 1) * limit;
+    const conditions: string[] = [`b.status = 'active'`, `b.deleted_at IS NULL`];
+    const sqlParams: any[] = [`%${q}%`];
+    let idx = 2;
+    if (citySlug) { conditions.push(`c.slug = $${idx++}`); sqlParams.push(citySlug); }
+    if (countrySlug) { conditions.push(`co.slug = $${idx++}`); sqlParams.push(countrySlug); }
+    sqlParams.push(limit, offset);
+
+    const where = conditions.join(' AND ');
+    const rows = await this.dataSource.query(
+      `SELECT p.id, p.name, p.slug, p.short_description AS "shortDescription",
+              p.price, p.image_url AS "imageUrl",
+              b.id AS "businessId", b.name AS "businessName", b.slug AS "businessSlug",
+              c.name AS "cityName", c.slug AS "citySlug",
+              co.name AS "countryName", co.slug AS "countrySlug"
+       FROM products p
+       JOIN businesses b ON b.id = p.business_id
+       LEFT JOIN business_locations bl ON bl.business_id = b.id
+       LEFT JOIN cities c ON c.id = bl.city_id
+       LEFT JOIN countries co ON co.id = c.country_id
+       WHERE (p.name ILIKE $1 OR p.short_description ILIKE $1)
+         AND ${where}
+       ORDER BY p.name
+       LIMIT $${idx} OFFSET $${idx + 1}`,
+      sqlParams,
+    );
+
+    const [{ count }] = await this.dataSource.query(
+      `SELECT COUNT(*)::int AS count
+       FROM products p
+       JOIN businesses b ON b.id = p.business_id
+       LEFT JOIN business_locations bl ON bl.business_id = b.id
+       LEFT JOIN cities c ON c.id = bl.city_id
+       LEFT JOIN countries co ON co.id = c.country_id
+       WHERE (p.name ILIKE $1 OR p.short_description ILIKE $1) AND ${where}`,
+      sqlParams.slice(0, -2),
+    );
+
+    return { data: rows, meta: { total: count, page, limit } };
   }
 
   async searchAll(q: string, limit = 5) {
