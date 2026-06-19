@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Business, BusinessStatus } from './entities/business.entity';
@@ -156,5 +156,21 @@ export class BusinessesService {
 
   async incrementViewCount(id: string): Promise<void> {
     await this.businessesRepo.increment({ id }, 'viewCount', 1);
+  }
+
+  async findById(id: string, ownerId?: string): Promise<Business> {
+    const business = await this.businessesRepo.findOne({
+      where: { id },
+      relations: ['location', 'location.city', 'hours', 'socialLinks'],
+    });
+    if (!business) throw new NotFoundException('Business not found');
+    return business;
+  }
+
+  async assertOwner(businessId: string, userId: string): Promise<Business> {
+    const business = await this.businessesRepo.findOne({ where: { id: businessId } });
+    if (!business) throw new NotFoundException('Business not found');
+    if (business.ownerId !== userId) throw new ForbiddenException('Access denied');
+    return business;
   }
 }

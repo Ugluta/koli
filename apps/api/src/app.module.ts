@@ -8,6 +8,11 @@ import { HealthModule } from './modules/health/health.module';
 import { GeographyModule } from './modules/geography/geography.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { BusinessesModule } from './modules/businesses/businesses.module';
+import { ProductsModule } from './modules/products/products.module';
+import { ServicesModule } from './modules/services/services.module';
+import { MembershipModule } from './modules/membership/membership.module';
+import { MediaModule } from './modules/media/media.module';
+import { PanelModule } from './modules/panel/panel.module';
 
 @Module({
   imports: [
@@ -46,6 +51,11 @@ import { BusinessesModule } from './modules/businesses/businesses.module';
     GeographyModule,
     CategoriesModule,
     BusinessesModule,
+    ProductsModule,
+    ServicesModule,
+    MembershipModule,
+    MediaModule,
+    PanelModule,
   ],
 })
 export class AppModule {}
