@@ -18,6 +18,7 @@ import { SeoModule } from './modules/seo/seo.module';
 import { ScraperModule } from './modules/scraper/scraper.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { BillingModule } from './modules/billing/billing.module';
     ScraperModule,
     AdsModule,
     BillingModule,
+    SearchModule,
   ],
 })
 export class AppModule {}

@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Business, BusinessStatus } from './entities/business.entity';
 import { BusinessLocation } from './entities/business-location.entity';
 import { CreateBusinessDto } from './dto/create-business.dto';
+import { SearchService } from '../search/search.service';
 
 function slugify(text: string): string {
   return text
@@ -22,6 +23,7 @@ export class BusinessesService {
     @InjectRepository(Business) private businessesRepo: Repository<Business>,
     @InjectRepository(BusinessLocation) private locationsRepo: Repository<BusinessLocation>,
     private dataSource: DataSource,
+    @Optional() private searchService?: SearchService,
   ) {}
 
   async create(dto: CreateBusinessDto, ownerId: string): Promise<Business> {
@@ -64,10 +66,14 @@ export class BusinessesService {
         }
       }
 
-      return manager.findOneOrFail(Business, {
+      const result = await manager.findOneOrFail(Business, {
         where: { id: saved.id },
         relations: ['location', 'location.city', 'location.city.country'],
       });
+
+      // async index — don't block response
+      this.searchService?.indexBusiness(saved.id).catch(() => {});
+      return result;
     });
   }
 
