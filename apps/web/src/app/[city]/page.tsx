@@ -29,7 +29,6 @@ async function getTopCategories() {
     return (json.data ?? json ?? []).slice(0, 16);
   } catch { return []; }
 }
-}
 
 export async function generateMetadata({
   params,

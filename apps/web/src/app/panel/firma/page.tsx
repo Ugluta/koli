@@ -6,6 +6,8 @@ import { apiClient } from '@/lib/api/client';
 const DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 const SOCIAL_PLATFORMS = ['facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok', 'pinterest'];
 
+interface HourEntry { openTime: string; closeTime: string; isClosed: boolean; is24h: boolean }
+
 // ── Firma Oluşturma Formu ─────────────────────────────────────────────────────
 function CreateBusinessForm({ onCreated }: { onCreated: (b: any) => void }) {
   const [cities, setCities] = useState<any[]>([]);
@@ -272,8 +274,7 @@ export default function FirmaPage() {
       return;
     }
     import('leaflet').then((leaflet) => {
-      L = leaflet.default ?? leaflet;
-      // Fix default icon paths
+      const L = (leaflet.default ?? leaflet) as typeof import('leaflet');
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -469,31 +470,34 @@ export default function FirmaPage() {
       {/* Çalışma Saatleri */}
       {tab === 'saatler' && (
         <div className="bg-white rounded-xl border p-6 space-y-3">
-          {DAYS.map((day, i) => (
-            <div key={i} className="flex items-center gap-3 flex-wrap">
-              <span className="w-24 text-sm text-gray-700">{day}</span>
-              <label className="flex items-center gap-1 text-xs">
-                <input type="checkbox" checked={hours[i].isClosed} onChange={(e) => setHours((h) => { const n=[...h]; n[i]={...n[i],isClosed:e.target.checked,is24h:false}; return n; })} />
-                Kapalı
-              </label>
-              <label className="flex items-center gap-1 text-xs">
-                <input type="checkbox" checked={hours[i].is24h} onChange={(e) => setHours((h) => { const n=[...h]; n[i]={...n[i],is24h:e.target.checked,isClosed:false}; return n; })} />
-                24 Saat
-              </label>
-              {!hours[i].isClosed && !hours[i].is24h && (
-                <>
-                  <input type="time" value={hours[i].openTime} onChange={(e) => setHours((h) => { const n=[...h]; n[i]={...n[i],openTime:e.target.value}; return n; })}
-                    className="border rounded px-2 py-1 text-sm" />
-                  <span className="text-gray-400">–</span>
-                  <input type="time" value={hours[i].closeTime} onChange={(e) => setHours((h) => { const n=[...h]; n[i]={...n[i],closeTime:e.target.value}; return n; })}
-                    className="border rounded px-2 py-1 text-sm" />
-                </>
-              )}
-            </div>
-          ))}
-          <button onClick={saveHours} disabled={saving} className="mt-4 bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-            {saving ? 'Kaydediliyor...' : 'Saatleri Kaydet'}
-          </button>
+          {DAYS.map((day, i) => {
+            const h = hours[i] ?? { openTime: '09:00', closeTime: '18:00', isClosed: false, is24h: false };
+            const updateHour = (patch: Partial<HourEntry>) =>
+              setHours((prev) => prev.map((e, idx) => idx === i ? { ...e, ...patch } : e));
+            return (
+              <div key={i} className="flex items-center gap-3 flex-wrap">
+                <span className="w-24 text-sm text-gray-700">{day}</span>
+                <label className="flex items-center gap-1 text-xs cursor-pointer">
+                  <input type="checkbox" checked={h.isClosed} onChange={(e) => updateHour({ isClosed: e.target.checked, is24h: false })} />
+                  Kapalı
+                </label>
+                <label className="flex items-center gap-1 text-xs cursor-pointer">
+                  <input type="checkbox" checked={h.is24h} onChange={(e) => updateHour({ is24h: e.target.checked, isClosed: false })} />
+                  24 Saat
+                </label>
+                {!h.isClosed && !h.is24h && (
+                  <>
+                    <input type="time" value={h.openTime} onChange={(e) => updateHour({ openTime: e.target.value })}
+                      className="border rounded px-2 py-1 text-sm" />
+                    <span className="text-gray-400">–</span>
+                    <input type="time" value={h.closeTime} onChange={(e) => updateHour({ closeTime: e.target.value })}
+                      className="border rounded px-2 py-1 text-sm" />
+                  </>
+                )}
+              </div>
+            );
+          })}
+          <div className="pt-2"><SaveBar saving={saving} saved={saved} onSave={saveHours} /></div>
         </div>
       )}
 
