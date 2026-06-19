@@ -48,8 +48,9 @@ import { BillingModule } from './modules/billing/billing.module';
       inject: [ConfigService],
     }),
     ThrottlerModule.forRoot([
-      { name: 'short', ttl: 1000, limit: 10 },
-      { name: 'medium', ttl: 60000, limit: 100 },
+      { name: 'burst',  ttl: 1000,   limit: 20  },   // 20 req/s burst
+      { name: 'medium', ttl: 60000,  limit: 200 },   // 200 req/min
+      { name: 'daily',  ttl: 86400000, limit: 5000 }, // 5k req/day per IP
     ]),
     AuthModule,
     HealthModule,

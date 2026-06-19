@@ -1,5 +1,6 @@
-import { Controller, Post, Body, Get, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, HttpCode, HttpStatus, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -15,6 +16,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @Throttle({ burst: { ttl: 60000, limit: 5 }, medium: { ttl: 3600000, limit: 20 } })
   @ApiOperation({ summary: 'Register a new user' })
   register(@Body() dto: RegisterDto, @Req() req: FastifyRequest) {
     return this.authService.register(dto, req.ip);
@@ -23,6 +25,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ burst: { ttl: 60000, limit: 10 }, medium: { ttl: 900000, limit: 30 } })
   @ApiOperation({ summary: 'Login' })
   login(@Body() dto: LoginDto, @Req() req: FastifyRequest) {
     return this.authService.login(dto, req.ip);
