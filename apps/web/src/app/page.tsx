@@ -77,7 +77,10 @@ export default async function HomePage() {
         {/* Cities */}
         {cities.length > 0 && (
           <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-5">Şehirler</h2>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold text-gray-900">Şehirler</h2>
+              <Link href="/ulkeler" className="text-sm text-blue-600 hover:underline">Tüm ülkeler →</Link>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {cities.map((city: any) => (
                 <Link

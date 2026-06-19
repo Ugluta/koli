@@ -3,11 +3,140 @@
 import { useEffect, useState, useRef } from 'react';
 import { apiClient } from '@/lib/api/client';
 
-// Leaflet is loaded dynamically (SSR safe)
-let L: typeof import('leaflet') | null = null;
-
 const DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 const SOCIAL_PLATFORMS = ['facebook', 'instagram', 'twitter', 'youtube', 'linkedin', 'tiktok', 'pinterest'];
+
+// ── Firma Oluşturma Formu ─────────────────────────────────────────────────────
+function CreateBusinessForm({ onCreated }: { onCreated: (b: any) => void }) {
+  const [cities, setCities] = useState<any[]>([]);
+  const [name, setName] = useState('');
+  const [cityId, setCityId] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [website, setWebsite] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    apiClient.get('/cities').then((r) => setCities(r.data?.data ?? r.data ?? []));
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cityId) { setError('Şehir seçimi zorunludur'); return; }
+    setLoading(true); setError('');
+    try {
+      const res = await apiClient.post('/panel/businesses', {
+        name,
+        cityId: Number(cityId),
+        phone: phone || undefined,
+        email: email || undefined,
+        website: website || undefined,
+      });
+      onCreated(res.data?.data ?? res.data);
+    } catch (e: any) {
+      setError(e?.response?.data?.error?.message ?? e?.response?.data?.message ?? 'Hata oluştu');
+    } finally { setLoading(false); }
+  };
+
+  const inputCls = 'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+
+  return (
+    <div className="max-w-lg">
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">Firma Oluştur</h1>
+      <p className="text-gray-500 text-sm mb-6">Rehberde görünmesi için firma kaydı oluşturun.</p>
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">{error}</div>}
+      <form onSubmit={handleSubmit} className="bg-white border rounded-xl p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Firma Adı *</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} required className={inputCls} placeholder="Firma adınızı girin" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Şehir *</label>
+          <select value={cityId} onChange={(e) => setCityId(e.target.value)} required className={inputCls}>
+            <option value="">— Şehir seçin —</option>
+            {cities.map((c: any) => (
+              <option key={c.id} value={c.id}>{c.name}{c.country ? ` (${c.country.name})` : ''}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" className={inputCls} placeholder="+90 5xx xxx xx xx" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">E-posta</label>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Web Sitesi</label>
+            <input value={website} onChange={(e) => setWebsite(e.target.value)} type="url" className={inputCls} placeholder="https://" />
+          </div>
+        </div>
+        <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+          {loading ? 'Oluşturuluyor...' : 'Firma Oluştur'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ── Logo / Kapak Yükleme ──────────────────────────────────────────────────────
+function ImageUpload({
+  label, currentUrl, businessId, folder, field, onUploaded,
+}: {
+  label: string;
+  currentUrl: string | null;
+  businessId: string;
+  folder: string;
+  field: 'logoUrl' | 'coverUrl';
+  onUploaded: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) { setError('Dosya 5MB\'ı aşamaz'); return; }
+    setUploading(true); setError('');
+    try {
+      const { data } = await apiClient.post(`/panel/businesses/${businessId}/media/presign`, {
+        folder,
+        filename: file.name,
+        mimeType: file.type,
+      });
+      await fetch(data.uploadUrl, { method: 'PUT', headers: { 'Content-Type': file.type }, body: file });
+      await apiClient.patch(`/panel/businesses/${businessId}`, { [field]: data.publicUrl });
+      onUploaded(data.publicUrl);
+    } catch (e: any) {
+      setError(e?.response?.data?.error?.message ?? 'Yükleme başarısız');
+    } finally { setUploading(false); }
+  };
+
+  const aspect = field === 'logoUrl' ? 'aspect-square w-24' : 'aspect-video w-full max-w-xs';
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+      {currentUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={currentUrl} alt={label} className={`${aspect} object-cover rounded-xl border mb-2`} />
+      )}
+      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading}
+        className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-40"
+      >
+        {uploading ? 'Yükleniyor...' : currentUrl ? 'Değiştir' : 'Yükle'}
+      </button>
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+    </div>
+  );
+}
 
 interface Business {
   id: string;
@@ -42,6 +171,17 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
     >
       {children}
     </button>
+  );
+}
+
+function SaveBar({ saving, saved, onSave }: { saving: boolean; saved: boolean; onSave: () => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <button onClick={onSave} disabled={saving} className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+        {saving ? 'Kaydediliyor...' : 'Kaydet'}
+      </button>
+      {saved && <span className="text-sm text-green-600">Kaydedildi ✓</span>}
+    </div>
   );
 }
 
@@ -233,13 +373,8 @@ export default function FirmaPage() {
   };
 
   if (loading) return <p className="text-gray-400">Yükleniyor...</p>;
-  if (!biz) return (
-    <div className="max-w-lg">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Firma Oluştur</h1>
-      <p className="text-gray-500 text-sm">Henüz firma kaydınız yok. Aşağıdan yeni firma oluşturabilirsiniz.</p>
-      {/* TODO: create form */}
-    </div>
-  );
+  if (!biz) return <CreateBusinessForm onCreated={(b) => { setBiz(b); setName(b.name); }} />;
+
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -258,6 +393,25 @@ export default function FirmaPage() {
       {/* Genel Bilgiler */}
       {tab === 'genel' && (
         <div className="bg-white rounded-xl border p-6 space-y-4">
+          {/* Logo & Cover */}
+          <div className="grid grid-cols-2 gap-6 pb-4 border-b">
+            <ImageUpload
+              label="Logo"
+              currentUrl={biz.logoUrl}
+              businessId={biz.id}
+              folder="logos"
+              field="logoUrl"
+              onUploaded={(url) => setBiz((b) => b ? { ...b, logoUrl: url } : b)}
+            />
+            <ImageUpload
+              label="Kapak Fotoğrafı"
+              currentUrl={biz.coverUrl}
+              businessId={biz.id}
+              folder="covers"
+              field="coverUrl"
+              onUploaded={(url) => setBiz((b) => b ? { ...b, coverUrl: url } : b)}
+            />
+          </div>
           <Field label="Firma Adı *"><input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} /></Field>
           <Field label="Kısa Açıklama"><input value={shortDesc} onChange={(e) => setShortDesc(e.target.value)} maxLength={300} className={inputCls} /></Field>
           <Field label="Detaylı Açıklama"><textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={5} className={inputCls} /></Field>
@@ -270,9 +424,7 @@ export default function FirmaPage() {
             <Field label="E-posta"><input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className={inputCls} /></Field>
           </div>
           <Field label="Web Sitesi"><input value={website} onChange={(e) => setWebsite(e.target.value)} type="url" className={inputCls} placeholder="https://..." /></Field>
-          <button onClick={saveGenel} disabled={saving} className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-            {saving ? 'Kaydediliyor...' : 'Kaydet'}
-          </button>
+          <SaveBar saving={saving} saved={saved} onSave={saveGenel} />
         </div>
       )}
 
@@ -368,9 +520,7 @@ export default function FirmaPage() {
               </Field>
             );
           })}
-          <button onClick={saveSocials} disabled={saving} className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-            {saving ? 'Kaydediliyor...' : 'Kaydet'}
-          </button>
+          <SaveBar saving={saving} saved={saved} onSave={saveSocials} />
         </div>
       )}
     </div>
