@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, 'claude/**', 'feature/**']
+  pull_request:
+    branches: [main, master]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Type check API
+        run: cd apps/api && npx tsc --noEmit
+
+      - name: Type check Web
+        run: cd apps/web && npx tsc --noEmit
+
+  # ──────────────────────────────────────────────────────────────────────────
+  test-api:
+    name: API Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: koli_test
+          POSTGRES_USER: koli
+          POSTGRES_PASSWORD: koli_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Run API tests
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://koli:koli_test@localhost:5432/koli_test
+          JWT_SECRET: ci-test-secret-not-for-production
+          NODE_ENV: test
+        run: npm test -- --passWithNoTests
+
+  # ──────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build API
+        working-directory: apps/api
+        run: npx tsc --project tsconfig.json
+
+      - name: Build Web
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+          NEXT_PUBLIC_SITE_URL: https://koli.app
+        run: npm run build
+
+  # ──────────────────────────────────────────────────────────────────────────
+  docker-build:
+    name: Docker Build (dry-run)
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: apps/api
+          push: false
+          tags: koli/api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Web image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: apps/web
+          push: false
+          tags: koli/web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
