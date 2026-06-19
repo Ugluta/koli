@@ -5,6 +5,9 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
+import { GeographyModule } from './modules/geography/geography.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { BusinessesModule } from './modules/businesses/businesses.module';
 
 @Module({
   imports: [
@@ -40,6 +43,9 @@ import { HealthModule } from './modules/health/health.module';
     ]),
     AuthModule,
     HealthModule,
+    GeographyModule,
+    CategoriesModule,
+    BusinessesModule,
   ],
 })
 export class AppModule {}
