@@ -17,6 +17,7 @@ import { PostsModule } from './modules/posts/posts.module';
 import { SeoModule } from './modules/seo/seo.module';
 import { ScraperModule } from './modules/scraper/scraper.module';
 import { AdsModule } from './modules/ads/ads.module';
+import { BillingModule } from './modules/billing/billing.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { AdsModule } from './modules/ads/ads.module';
     SeoModule,
     ScraperModule,
     AdsModule,
+    BillingModule,
   ],
 })
 export class AppModule {}
