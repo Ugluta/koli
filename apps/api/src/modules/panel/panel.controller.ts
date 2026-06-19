@@ -2,7 +2,9 @@ import {
   Controller, Get, Post, Patch, Delete, Body, Param,
   Query, HttpCode, HttpStatus, ParseUUIDPipe,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { Repository } from 'typeorm';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User } from '../auth/entities/user.entity';
 import { BusinessesService } from '../businesses/businesses.service';
@@ -10,6 +12,7 @@ import { ProductsService } from '../products/products.service';
 import { ServicesService } from '../services/services.service';
 import { MembershipService } from '../membership/membership.service';
 import { MediaService } from '../media/media.service';
+import { BusinessMedia } from '../businesses/entities/business-media.entity';
 import { CreateProductDto, UpdateProductDto } from '../products/dto/product.dto';
 import { CreateServiceDto, UpdateServiceDto } from '../services/dto/service.dto';
 
@@ -23,6 +26,13 @@ class ReorderDto {
   items: { id: string; sortOrder: number }[];
 }
 
+class AddGalleryItemDto {
+  url: string;
+  mimeType?: string;
+  fileSize?: number;
+  altText?: string;
+}
+
 @ApiTags('panel')
 @ApiBearerAuth()
 @Controller('panel/businesses/:businessId')
@@ -33,6 +43,7 @@ export class PanelController {
     private servicesService: ServicesService,
     private membershipService: MembershipService,
     private mediaService: MediaService,
+    @InjectRepository(BusinessMedia) private galleryRepo: Repository<BusinessMedia>,
   ) {}
 
   // ── Stats ──────────────────────────────────────────────────────────
@@ -158,6 +169,37 @@ export class PanelController {
   ) {
     await this.businessesService.assertOwner(businessId, user.id);
     await this.servicesService.remove(serviceId, businessId);
+  }
+
+  // ── Gallery ───────────────────────────────────────────────────────
+  @Get('gallery')
+  @ApiOperation({ summary: 'List business gallery images' })
+  async getGallery(@Param('businessId', ParseUUIDPipe) businessId: string) {
+    return this.galleryRepo.find({ where: { businessId }, order: { sortOrder: 'ASC', createdAt: 'ASC' } });
+  }
+
+  @Post('gallery')
+  @ApiOperation({ summary: 'Add confirmed upload to gallery' })
+  async addGalleryItem(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @Body() dto: AddGalleryItemDto,
+    @CurrentUser() user: User,
+  ) {
+    await this.businessesService.assertOwner(businessId, user.id);
+    await this.membershipService.checkLimit(businessId, 'images', await this.galleryRepo.countBy({ businessId }));
+    return this.galleryRepo.save(this.galleryRepo.create({ businessId, ...dto }));
+  }
+
+  @Delete('gallery/:mediaId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete gallery item' })
+  async deleteGalleryItem(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @Param('mediaId', ParseUUIDPipe) mediaId: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.businessesService.assertOwner(businessId, user.id);
+    await this.galleryRepo.delete({ id: mediaId, businessId });
   }
 
   // ── Media Upload ──────────────────────────────────────────────────
