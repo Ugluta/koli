@@ -13,6 +13,7 @@ import { ServicesModule } from './modules/services/services.module';
 import { MembershipModule } from './modules/membership/membership.module';
 import { MediaModule } from './modules/media/media.module';
 import { PanelModule } from './modules/panel/panel.module';
+import { PostsModule } from './modules/posts/posts.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { PanelModule } from './modules/panel/panel.module';
     MembershipModule,
     MediaModule,
     PanelModule,
+    PostsModule,
   ],
 })
 export class AppModule {}
