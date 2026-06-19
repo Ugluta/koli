@@ -15,6 +15,7 @@ import { MediaModule } from './modules/media/media.module';
 import { PanelModule } from './modules/panel/panel.module';
 import { PostsModule } from './modules/posts/posts.module';
 import { SeoModule } from './modules/seo/seo.module';
+import { ScraperModule } from './modules/scraper/scraper.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { SeoModule } from './modules/seo/seo.module';
     PanelModule,
     PostsModule,
     SeoModule,
+    ScraperModule,
   ],
 })
 export class AppModule {}
