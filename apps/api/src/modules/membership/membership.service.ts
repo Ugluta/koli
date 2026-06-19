@@ -1,6 +1,6 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { MembershipPlan, MembershipPlanName } from './entities/membership-plan.entity';
 import { MembershipSubscription, SubscriptionStatus } from './entities/membership-subscription.entity';
 
@@ -9,6 +9,7 @@ export class MembershipService {
   constructor(
     @InjectRepository(MembershipPlan) private plansRepo: Repository<MembershipPlan>,
     @InjectRepository(MembershipSubscription) private subsRepo: Repository<MembershipSubscription>,
+    private dataSource: DataSource,
   ) {}
 
   findAllPlans() {
@@ -51,6 +52,15 @@ export class MembershipService {
         `${resource} limit reached (${limit}). Upgrade your plan to add more.`,
       );
     }
+  }
+
+  async getSubscriptionForUser(userId: string): Promise<MembershipSubscription | null> {
+    const rows = await this.dataSource.query(
+      `SELECT id FROM businesses WHERE owner_id = $1 AND deleted_at IS NULL ORDER BY created_at LIMIT 1`,
+      [userId],
+    );
+    if (!rows.length) return null;
+    return this.getOrCreateSubscription(rows[0].id);
   }
 
   async checkFeature(businessId: string, feature: 'video' | 'files' | 'whatsapp' | 'featured'): Promise<void> {

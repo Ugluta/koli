@@ -10,6 +10,9 @@ const NAV = [
   { label: 'Ürünler', href: '/panel/urunler', icon: '📦' },
   { label: 'Hizmetler', href: '/panel/hizmetler', icon: '🛠️' },
   { label: 'Galeri', href: '/panel/galeri', icon: '🖼️' },
+  { label: 'İçerikler', href: '/panel/icerik', icon: '✍️' },
+  { label: 'Reklamlar', href: '/panel/reklamlar', icon: '📢' },
+  { label: 'Scraper', href: '/panel/scraper', icon: '🤖' },
   { label: 'İstatistikler', href: '/panel/istatistikler', icon: '📈' },
   { label: 'Üyelik', href: '/panel/uyelik', icon: '⭐' },
 ];
