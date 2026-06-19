@@ -19,6 +19,7 @@ import { ScraperModule } from './modules/scraper/scraper.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { SearchModule } from './modules/search/search.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { SearchModule } from './modules/search/search.module';
     AdsModule,
     BillingModule,
     SearchModule,
+    AdminModule,
   ],
 })
 export class AppModule {}
