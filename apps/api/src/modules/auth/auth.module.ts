@@ -11,6 +11,7 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { User } from './entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
     PassportModule,
     JwtModule.register({}),
     TypeOrmModule.forFeature([User, RefreshToken]),
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [

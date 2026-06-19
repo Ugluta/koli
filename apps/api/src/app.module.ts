@@ -20,6 +20,7 @@ import { AdsModule } from './modules/ads/ads.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { SearchModule } from './modules/search/search.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { AdminModule } from './modules/admin/admin.module';
     BillingModule,
     SearchModule,
     AdminModule,
+    MailModule,
   ],
 })
 export class AppModule {}

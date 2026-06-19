@@ -9,9 +9,10 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { UserRole, User } from '../auth/entities/user.entity';
 import { Business, BusinessStatus } from '../businesses/entities/business.entity';
+import { MailService } from '../mail/mail.service';
 
-class UpdateUserRoleDto { role: UserRole; }
-class ApproveBusinessDto { status: BusinessStatus; }
+class UpdateUserRoleDto { role!: UserRole; }
+class ApproveBusinessDto { status!: BusinessStatus; }
 
 @ApiTags('admin')
 @ApiBearerAuth()
@@ -22,6 +23,7 @@ export class AdminController {
   constructor(
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(Business) private bizRepo: Repository<Business>,
+    private mailService: MailService,
   ) {}
 
   @Get('users')
@@ -76,6 +78,21 @@ export class AdminController {
   @ApiOperation({ summary: 'Approve or suspend a business' })
   async updateBusinessStatus(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ApproveBusinessDto) {
     await this.bizRepo.update(id, { status: dto.status });
+    if (dto.status === BusinessStatus.ACTIVE) {
+      const biz = await this.bizRepo.findOne({
+        where: { id },
+        relations: ['location', 'location.city'],
+      });
+      if (biz?.ownerId != null) {
+        const owner = await this.usersRepo.findOne({ where: { id: biz.ownerId! } });
+        if (owner?.email) {
+          this.mailService.sendBusinessApproved(
+            String(owner.email), String(owner.email).split('@')[0],
+            String(biz.name), biz.slug ?? '', biz.location?.city?.name,
+          ).catch(() => {});
+        }
+      }
+    }
     return { ok: true };
   }
 

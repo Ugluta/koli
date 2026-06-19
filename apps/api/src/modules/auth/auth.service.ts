@@ -14,6 +14,7 @@ import { User } from './entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +23,7 @@ export class AuthService {
     @InjectRepository(RefreshToken) private tokensRepo: Repository<RefreshToken>,
     private jwtService: JwtService,
     private config: ConfigService,
+    private mailService: MailService,
   ) {}
 
   async register(dto: RegisterDto, ipAddress?: string) {
@@ -31,6 +33,8 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const user = this.usersRepo.create({ email: dto.email, passwordHash });
     await this.usersRepo.save(user);
+
+    this.mailService.sendWelcome(user.email, user.email.split('@')[0]).catch(() => {});
 
     return this.issueTokens(user, ipAddress);
   }

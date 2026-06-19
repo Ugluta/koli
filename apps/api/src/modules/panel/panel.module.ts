@@ -7,11 +7,12 @@ import { ServicesModule } from '../services/services.module';
 import { MembershipModule } from '../membership/membership.module';
 import { MediaModule } from '../media/media.module';
 import { BusinessMedia } from '../businesses/entities/business-media.entity';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([BusinessMedia]),
-    BusinessesModule, ProductsModule, ServicesModule, MembershipModule, MediaModule,
+    BusinessesModule, ProductsModule, ServicesModule, MembershipModule, MediaModule, MailModule,
   ],
   controllers: [PanelController, PanelBusinessListController],
 })

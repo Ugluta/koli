@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firmanız İncelemede</title>
+  <style>
+    body { margin: 0; padding: 0; background: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .wrapper { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; }
+    .header { background: #d97706; padding: 32px; text-align: center; }
+    .header h1 { color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; }
+    .badge { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 50px; display: inline-block; padding: 6px 18px; margin: 16px 0 0; color: #92400e; font-size: 14px; font-weight: 600; }
+    .body { padding: 32px; }
+    .body p { color: #374151; line-height: 1.7; margin: 0 0 16px; }
+    .steps { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 20px; margin: 20px 0; }
+    .steps li { color: #78350f; margin: 8px 0; font-size: 14px; }
+    .footer { padding: 24px 32px; border-top: 1px solid #f3f4f6; text-align: center; }
+    .footer p { color: #9ca3af; font-size: 13px; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>🌍 Koli</h1>
+      <div class="badge">⏳ İncelemede</div>
+    </div>
+    <div class="body">
+      <p>Merhaba <strong>{{ownerName}}</strong>,</p>
+      <p><strong>{{businessName}}</strong> firmanızın kaydı başarıyla alındı ve şu anda inceleme sürecindedir.</p>
+      <div class="steps">
+        <p style="margin:0 0 8px;font-weight:600;color:#92400e;">Süreç hakkında bilgi:</p>
+        <ul>
+          <li>İnceleme süreci genellikle 24-48 saat içinde tamamlanır</li>
+          <li>Onaylanınca e-posta ile bilgilendirileceksiniz</li>
+          <li>Bu sürede panel üzerinden bilgilerinizi güncelleyebilirsiniz</li>
+        </ul>
+      </div>
+      <p>Teşekkür ederiz,<br /><strong>Koli Ekibi</strong></p>
+    </div>
+    <div class="footer">
+      <p>Koli — Avrupa Firma Rehberi</p>
+    </div>
+  </div>
+</body>
+</html>

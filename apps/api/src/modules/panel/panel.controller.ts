@@ -17,6 +17,7 @@ import { CreateProductDto, UpdateProductDto } from '../products/dto/product.dto'
 import { CreateServiceDto, UpdateServiceDto } from '../services/dto/service.dto';
 import { CreateBusinessDto } from '../businesses/dto/create-business.dto';
 import { UpdateBusinessDto } from '../businesses/dto/update-business.dto';
+import { MailService } from '../mail/mail.service';
 
 class PresignedUploadDto {
   folder: string;
@@ -265,7 +266,10 @@ export class PanelController {
 @ApiBearerAuth()
 @Controller('panel/businesses')
 export class PanelBusinessListController {
-  constructor(private businessesService: BusinessesService) {}
+  constructor(
+    private businessesService: BusinessesService,
+    private mailService: MailService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: "List caller's businesses" })
@@ -275,7 +279,9 @@ export class PanelBusinessListController {
 
   @Post()
   @ApiOperation({ summary: 'Create a business' })
-  create(@Body() dto: CreateBusinessDto, @CurrentUser() user: User) {
-    return this.businessesService.create(dto, user.id);
+  async create(@Body() dto: CreateBusinessDto, @CurrentUser() user: User) {
+    const biz = await this.businessesService.create(dto, user.id);
+    if (user.email) this.mailService.sendBusinessPending(user.email, user.email.split('@')[0], dto.name ?? '').catch(() => {});
+    return biz;
   }
 }
