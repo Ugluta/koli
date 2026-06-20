@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body { margin: 0; padding: 0; background: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .wrapper { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; }
+    .header { background: #2563eb; padding: 32px; text-align: center; }
+    .header h1 { color: #fff; margin: 0; font-size: 22px; font-weight: 700; }
+    .body { padding: 32px; }
+    .body p { color: #374151; line-height: 1.7; margin: 0 0 16px; }
+    .cta { text-align: center; margin: 28px 0; }
+    .cta a { background: #2563eb; color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 15px; display: inline-block; }
+    .code { background: #f3f4f6; border-radius: 8px; padding: 16px; text-align: center; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #1d4ed8; margin: 20px 0; font-family: monospace; }
+    .footer { padding: 24px 32px; border-top: 1px solid #f3f4f6; text-align: center; }
+    .footer p { color: #9ca3af; font-size: 13px; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header"><h1>🌍 Koli</h1></div>
+    <div class="body">
+      <p>Merhaba,</p>
+      <p>E-posta adresinizi doğrulamak için aşağıdaki butona tıklayın:</p>
+      <div class="cta"><a href="{{verifyUrl}}">E-postamı Doğrula</a></div>
+      <p style="font-size:13px;color:#6b7280;">Bu link 24 saat geçerlidir. Eğer bu isteği siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
+    </div>
+    <div class="footer"><p>Koli — Avrupa Firma Rehberi</p></div>
+  </div>
+</body>
+</html>

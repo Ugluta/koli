@@ -42,6 +42,21 @@ export class User {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
+  @Column({ name: 'email_verified', default: false })
+  emailVerified: boolean;
+
+  @Column({ name: 'email_verify_token', nullable: true, select: false })
+  emailVerifyToken: string | null;
+
+  @Column({ name: 'email_verify_expires', type: 'timestamptz', nullable: true, select: false })
+  emailVerifyExpires: Date | null;
+
+  @Column({ name: 'password_reset_token', nullable: true, select: false })
+  passwordResetToken: string | null;
+
+  @Column({ name: 'password_reset_expires', type: 'timestamptz', nullable: true, select: false })
+  passwordResetExpires: Date | null;
+
   @OneToMany(() => RefreshToken, (token) => token.user)
   refreshTokens: RefreshToken[];
 }

@@ -3,6 +3,7 @@ import {
   ConflictException,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -35,6 +36,7 @@ export class AuthService {
     await this.usersRepo.save(user);
 
     this.mailService.sendWelcome(user.email, user.email.split('@')[0]).catch(() => {});
+    this.sendVerificationEmail(user.id).catch(() => {});
 
     return this.issueTokens(user, ipAddress);
   }
@@ -84,6 +86,71 @@ export class AuthService {
   async logout(userId: string, rawRefreshToken: string) {
     const tokenHash = this.hashToken(rawRefreshToken);
     await this.tokensRepo.update({ userId, tokenHash }, { revokedAt: new Date() });
+  }
+
+  async sendVerificationEmail(userId: string) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    await this.usersRepo.update(userId, {
+      emailVerifyToken: token,
+      emailVerifyExpires: expires,
+    });
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    if (!user?.email) return;
+    const siteUrl = this.config.get('SITE_URL', 'http://localhost:3000');
+    await this.mailService.sendVerifyEmail(user.email, `${siteUrl}/eposta-dogrula?token=${token}`);
+  }
+
+  async verifyEmail(token: string) {
+    const user = await this.usersRepo
+      .createQueryBuilder('u')
+      .addSelect('u.emailVerifyToken')
+      .addSelect('u.emailVerifyExpires')
+      .where('u.emailVerifyToken = :token', { token })
+      .getOne();
+    if (!user || !user.emailVerifyExpires || user.emailVerifyExpires < new Date()) {
+      throw new BadRequestException('Geçersiz veya süresi dolmuş doğrulama linki');
+    }
+    await this.usersRepo.update(user.id, {
+      emailVerified: true,
+      emailVerifyToken: null,
+      emailVerifyExpires: null,
+    });
+    return { ok: true };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersRepo.findOne({ where: { email } });
+    if (!user) return; // don't reveal existence
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1h
+    await this.usersRepo.update(user.id, {
+      passwordResetToken: token,
+      passwordResetExpires: expires,
+    });
+    const siteUrl = this.config.get('SITE_URL', 'http://localhost:3000');
+    await this.mailService.sendResetPassword(email, `${siteUrl}/sifre-sifirla?token=${token}`);
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const user = await this.usersRepo
+      .createQueryBuilder('u')
+      .addSelect('u.passwordResetToken')
+      .addSelect('u.passwordResetExpires')
+      .where('u.passwordResetToken = :token', { token })
+      .getOne();
+    if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
+      throw new BadRequestException('Geçersiz veya süresi dolmuş sıfırlama linki');
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await this.usersRepo.update(user.id, {
+      passwordHash,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    });
+    // invalidate all refresh tokens
+    await this.tokensRepo.delete({ userId: user.id });
+    return { ok: true };
   }
 
   async revokeAllUserTokens(userId: string) {

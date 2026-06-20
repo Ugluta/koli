@@ -38,6 +38,14 @@ export class MailService {
     });
   }
 
+  async sendVerifyEmail(to: string, verifyUrl: string) {
+    await this.send(to, 'E-posta adresinizi doğrulayın', 'verify-email', { verifyUrl });
+  }
+
+  async sendResetPassword(to: string, resetUrl: string) {
+    await this.send(to, 'Şifre Sıfırlama', 'reset-password', { resetUrl });
+  }
+
   private async send(to: string, subject: string, template: string, context: Record<string, any>) {
     try {
       await this.mailer.sendMail({ to, subject, template, context });

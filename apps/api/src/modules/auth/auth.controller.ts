@@ -61,4 +61,33 @@ export class AuthController {
     const { passwordHash, ...result } = user as User & { passwordHash?: string };
     return result;
   }
+
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() body: { email: string }) {
+    await this.authService.forgotPassword(body.email);
+    return { message: 'Eğer bu e-posta kayıtlıysa, sıfırlama linki gönderildi.' };
+  }
+
+  @Post('reset-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() body: { token: string; password: string }) {
+    return this.authService.resetPassword(body.token, body.password);
+  }
+
+  @Post('verify-email')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() body: { token: string }) {
+    return this.authService.verifyEmail(body.token);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(@CurrentUser() user: User) {
+    await this.authService.sendVerificationEmail(user.id);
+    return { ok: true };
+  }
 }
