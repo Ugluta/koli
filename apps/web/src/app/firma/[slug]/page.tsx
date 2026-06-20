@@ -48,15 +48,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const business = await getBusiness(params.slug);
   if (!business) return { title: 'Firma bulunamadı' };
   const cityName = business.location?.city?.name;
+  const title = `${business.name}${cityName ? ` — ${cityName}` : ''}`;
+  const description = business.shortDescription ?? business.description?.substring(0, 160);
   return {
-    title: `${business.name}${cityName ? ` — ${cityName}` : ''}`,
-    description: business.shortDescription ?? business.description?.substring(0, 160),
+    title,
+    description,
+    alternates: { canonical: `/firma/${params.slug}` },
     openGraph: {
       title: business.name,
       description: business.shortDescription ?? undefined,
-      images: business.coverUrl ? [{ url: business.coverUrl }] : [],
+      images: business.coverUrl ? [{ url: business.coverUrl, alt: business.name }] : [],
       type: 'website',
-      url: `${SITE_URL}/firma/${params.slug}`,
+      url: `/firma/${params.slug}`,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: business.name,
+      description: business.shortDescription ?? undefined,
+      images: business.coverUrl ? [business.coverUrl] : [],
     },
   };
 }

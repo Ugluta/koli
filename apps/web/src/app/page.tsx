@@ -21,8 +21,15 @@ async function getTopCategories() {
 }
 
 export const metadata: Metadata = {
-  title: 'Koli — Avrupa Şehir ve Firma Rehberi',
+  title: 'Koli — Avrupa Firma Rehberi',
   description: 'Avrupa genelinde şehirler, firmalar, ürünler ve hizmetler için kapsamlı rehber.',
+  alternates: { canonical: '/' },
+  openGraph: {
+    title: 'Koli — Avrupa Firma Rehberi',
+    description: 'Avrupa genelinde şehirler, firmalar, ürünler ve hizmetler için kapsamlı rehber.',
+    url: '/',
+    type: 'website',
+  },
 };
 
 export default async function HomePage() {

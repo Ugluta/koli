@@ -37,11 +37,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const city = await getCity(params.city);
   if (!city) return { title: 'Şehir Bulunamadı' };
+  const title = city.seoTitle ?? `${city.name} Firma Rehberi`;
+  const description = city.seoDescription ?? `${city.name} şehrindeki firma, ürün ve hizmetleri keşfedin.`;
   return {
-    title: city.seoTitle ?? `${city.name} Firma Rehberi`,
-    description:
-      city.seoDescription ??
-      `${city.name} şehrindeki firma, ürün ve hizmetleri keşfedin.`,
+    title,
+    description,
+    alternates: { canonical: `/${params.city}` },
+    openGraph: { title, description, url: `/${params.city}`, type: 'website' },
   };
 }
 

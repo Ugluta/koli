@@ -54,6 +54,18 @@ export class SeoService {
     );
   }
 
+  async getSitemapCategories(): Promise<Array<{ slug: string; updatedAt: Date }>> {
+    return this.dataSource.query(
+      `SELECT slug, updated_at AS "updatedAt" FROM categories WHERE deleted_at IS NULL ORDER BY name`,
+    );
+  }
+
+  async getSitemapCountries(): Promise<Array<{ slug: string; updatedAt: Date }>> {
+    return this.dataSource.query(
+      `SELECT slug, updated_at AS "updatedAt" FROM countries WHERE deleted_at IS NULL ORDER BY name`,
+    );
+  }
+
   async getSitemapBusinesses(offset = 0, limit = 10000): Promise<Array<{ slug: string; updatedAt: Date }>> {
     return this.dataSource.query(
       `SELECT slug, updated_at AS "updatedAt" FROM businesses

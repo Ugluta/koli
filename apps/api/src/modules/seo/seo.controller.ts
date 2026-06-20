@@ -62,6 +62,8 @@ export class SeoController {
 
     const entries: string[] = [
       `  <sitemap><loc>${BASE_URL}/sitemap-cities.xml</loc></sitemap>`,
+      `  <sitemap><loc>${BASE_URL}/sitemap-categories.xml</loc></sitemap>`,
+      `  <sitemap><loc>${BASE_URL}/sitemap-countries.xml</loc></sitemap>`,
     ];
     for (let i = 0; i * CHUNK < bizCount; i++) {
       entries.push(`  <sitemap><loc>${BASE_URL}/sitemap-businesses-${i}.xml</loc></sitemap>`);
@@ -71,6 +73,24 @@ export class SeoController {
     }
 
     res.header('Content-Type', 'application/xml').send(sitemapIndex(entries));
+  }
+
+  @Get('sitemap-categories.xml')
+  async sitemapCategories(@Res() res: FastifyReply) {
+    const categories = await this.seoService.getSitemapCategories();
+    const urls = categories.map((c) =>
+      loc(`/kategori/${c.slug}`, c.updatedAt?.toISOString(), 'weekly', '0.8'),
+    );
+    res.header('Content-Type', 'application/xml').send(urlSet(urls));
+  }
+
+  @Get('sitemap-countries.xml')
+  async sitemapCountries(@Res() res: FastifyReply) {
+    const countries = await this.seoService.getSitemapCountries();
+    const urls = countries.map((c) =>
+      loc(`/ulkeler/${c.slug}`, c.updatedAt?.toISOString(), 'monthly', '0.7'),
+    );
+    res.header('Content-Type', 'application/xml').send(urlSet(urls));
   }
 
   @Get('sitemap-cities.xml')

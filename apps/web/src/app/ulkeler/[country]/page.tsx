@@ -33,9 +33,15 @@ export async function generateMetadata({ params }: { params: { country: string }
   const country = await getCountry(params.country);
   if (!country) return { title: 'Ülke Bulunamadı' };
   return {
-    title: `${country.name} Firma Rehberi — Koli`,
+    title: `${country.name} Firma Rehberi`,
     description: `${country.name} şehirleri ve firmalar rehberi.`,
     alternates: { canonical: `/ulkeler/${params.country}` },
+    openGraph: {
+      title: `${country.name} Firma Rehberi`,
+      description: `${country.name} şehirleri ve firmalar rehberi.`,
+      url: `/ulkeler/${params.country}`,
+      type: 'website',
+    },
   };
 }
 
