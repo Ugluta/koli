@@ -201,6 +201,7 @@ const inputCls = 'w-full border rounded-lg px-3 py-2 text-sm focus:outline-none 
 export default function FirmaPage() {
   const [tab, setTab] = useState<'genel' | 'adres' | 'saatler' | 'sosyal'>('genel');
   const [biz, setBiz] = useState<Business | null>(null);
+  const [allBusinesses, setAllBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -234,33 +235,36 @@ export default function FirmaPage() {
   // Social links
   const [socials, setSocials] = useState<Array<{ platform: string; url: string }>>([]);
 
+  const loadBusiness = (b: Business) => {
+    setBiz(b);
+    setName(b.name ?? '');
+    setShortDesc(b.shortDescription ?? '');
+    setDesc(b.description ?? '');
+    setPhone(b.phone ?? '');
+    setPhoneSecondary(b.phoneSecondary ?? '');
+    setWhatsapp(b.whatsapp ?? '');
+    setEmail(b.email ?? '');
+    setWebsite(b.website ?? '');
+    setAddressLine1(b.location?.addressLine1 ?? '');
+    setPostalCode(b.location?.postalCode ?? '');
+    setLat(b.location?.latitude ? Number(b.location.latitude) : null);
+    setLng(b.location?.longitude ? Number(b.location.longitude) : null);
+    if (b.hours?.length) {
+      const h = Array.from({ length: 7 }, () => ({ openTime: '09:00', closeTime: '18:00', isClosed: false, is24h: false }));
+      for (const hr of b.hours) { const idx = hr.dayOfWeek; h[idx] = { openTime: hr.openTime ?? '09:00', closeTime: hr.closeTime ?? '18:00', isClosed: hr.isClosed, is24h: hr.is24h }; }
+      setHours(h);
+    }
+    if (b.socialLinks?.length) setSocials(b.socialLinks.map((s: any) => ({ platform: s.platform, url: s.url })));
+  };
+
   useEffect(() => {
     apiClient.get('/panel/businesses')
       .then(async (res) => {
-        const b: Business = res.data?.data?.[0] ?? res.data?.[0];
+        const list: Business[] = res.data?.data ?? res.data ?? [];
+        setAllBusinesses(list);
+        const b: Business = list[0];
         if (!b) return;
-        setBiz(b);
-        setName(b.name ?? '');
-        setShortDesc(b.shortDescription ?? '');
-        setDesc(b.description ?? '');
-        setPhone(b.phone ?? '');
-        setPhoneSecondary(b.phoneSecondary ?? '');
-        setWhatsapp(b.whatsapp ?? '');
-        setEmail(b.email ?? '');
-        setWebsite(b.website ?? '');
-        setAddressLine1(b.location?.addressLine1 ?? '');
-        setPostalCode(b.location?.postalCode ?? '');
-        setLat(b.location?.latitude ? Number(b.location.latitude) : null);
-        setLng(b.location?.longitude ? Number(b.location.longitude) : null);
-        if (b.hours?.length) {
-          const h = Array.from({ length: 7 }, () => ({ openTime: '09:00', closeTime: '18:00', isClosed: false, is24h: false }));
-          for (const hr of b.hours) {
-            const idx = hr.dayOfWeek; // 0=Mon
-            h[idx] = { openTime: hr.openTime ?? '09:00', closeTime: hr.closeTime ?? '18:00', isClosed: hr.isClosed, is24h: hr.is24h };
-          }
-          setHours(h);
-        }
-        if (b.socialLinks?.length) setSocials(b.socialLinks.map((s) => ({ platform: s.platform, url: s.url })));
+        loadBusiness(b);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -374,12 +378,22 @@ export default function FirmaPage() {
   };
 
   if (loading) return <p className="text-gray-400">Yükleniyor...</p>;
-  if (!biz) return <CreateBusinessForm onCreated={(b) => { setBiz(b); setName(b.name); }} />;
-
+  if (!biz) return <CreateBusinessForm onCreated={(b) => { setAllBusinesses([b]); loadBusiness(b); }} />;
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Firma Bilgileri</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-bold text-gray-900">Firma Bilgileri</h1>
+        {allBusinesses.length > 1 && (
+          <select
+            value={biz.id}
+            onChange={(e) => { const b = allBusinesses.find((x) => String(x.id) === e.target.value); if (b) loadBusiness(b); }}
+            className="border rounded-lg px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {allBusinesses.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        )}
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap">

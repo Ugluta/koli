@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import SearchFilters from './SearchFilters';
+import MobileFilters from './MobileFilters';
 
 export async function generateMetadata({ searchParams }: { searchParams: { q?: string } }): Promise<Metadata> {
   return {
@@ -126,6 +127,19 @@ export default async function AraPage({
 
           {/* Results */}
           <div className="flex-1 min-w-0">
+            {/* Mobile filter button */}
+            <div className="md:hidden mb-4">
+              <Suspense fallback={null}>
+                <MobileFilters
+                  countries={countries}
+                  cities={cities}
+                  currentCountry={country}
+                  currentCity={city}
+                  q={q}
+                  tab={tab}
+                />
+              </Suspense>
+            </div>
             {q && (
               <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
                 <div>

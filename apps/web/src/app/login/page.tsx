@@ -110,6 +110,11 @@ function LoginForm() {
             {loading ? 'Lütfen bekleyin...' : tab === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
           </button>
         </form>
+        {tab === 'login' && (
+          <p className="text-center text-sm text-gray-400 mt-4">
+            <a href="/sifremi-unuttum" className="hover:text-blue-600 hover:underline">Şifremi unuttum</a>
+          </p>
+        )}
       </div>
     </div>
   );

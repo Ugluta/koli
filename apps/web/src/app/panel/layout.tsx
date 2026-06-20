@@ -20,7 +20,7 @@ const NAV = [
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [user, setUser] = useState<{ email: string } | null>(null);
+    const [user, setUser] = useState<{ email: string; emailVerified?: boolean } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -66,6 +66,13 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
+        {user && user.emailVerified === false && (
+          <div className="bg-yellow-50 border-b border-yellow-200 px-6 py-3 flex items-center gap-3 text-sm text-yellow-800">
+            <span>📧</span>
+            <span>E-posta adresiniz henüz doğrulanmadı.</span>
+            <a href="/eposta-dogrula" className="underline font-medium hover:text-yellow-900">Doğrulama e-postası gönder →</a>
+          </div>
+        )}
         <div className="max-w-5xl mx-auto p-6">{children}</div>
       </main>
     </div>
