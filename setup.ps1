@@ -5,16 +5,11 @@ $ErrorActionPreference = 'Stop'
 function Write-OK($msg)   { Write-Host "  [OK] $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "  [!]  $msg" -ForegroundColor Yellow }
 function Write-Err($msg)  { Write-Host "  [X]  $msg" -ForegroundColor Red; Read-Host "Cikmak icin Enter"; exit 1 }
+function Coalesce($a, $b) { if ($a) { $a } else { $b } }
 
 Write-Host ""
-Write-Host "  ██╗  ██╗ ██████╗ ██╗     ██╗" -ForegroundColor Cyan
-Write-Host "  ██║ ██╔╝██╔═══██╗██║     ██║" -ForegroundColor Cyan
-Write-Host "  █████╔╝ ██║   ██║██║     ██║" -ForegroundColor Cyan
-Write-Host "  ██╔═██╗ ██║   ██║██║     ██║" -ForegroundColor Cyan
-Write-Host "  ██║  ██╗╚██████╔╝███████╗██║" -ForegroundColor Cyan
-Write-Host "  ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "  Avrupa Firma Rehberi - Kurulum Sihirbazi" -ForegroundColor White
+Write-Host "  Koli - Avrupa Firma Rehberi" -ForegroundColor Cyan
+Write-Host "  Kurulum Sihirbazi" -ForegroundColor Cyan
 Write-Host "  ------------------------------------------"
 Write-Host ""
 
@@ -58,19 +53,19 @@ if (-not (Test-Path '.env')) {
 
 # ── 3. .env değerlerini yükle ─────────────────────────────────────────────────
 $env_vars = @{}
-Get-Content '.env' | Where-Object { $_ -match '^\s*([^#][^=]+)=(.*)$' } | ForEach-Object {
-    $k, $v = $_ -split '=', 2
-    $env_vars[$k.Trim()] = $v.Trim()
+Get-Content '.env' | Where-Object { $_ -match '^([^#][^=]+)=(.*)$' } | ForEach-Object {
+    $parts = $_ -split '=', 2
+    $env_vars[$parts[0].Trim()] = $parts[1].Trim()
 }
-$MINIO_USER   = $env_vars['MINIO_ROOT_USER']   ?? 'minioadmin'
-$MINIO_PASS   = $env_vars['MINIO_ROOT_PASSWORD'] ?? ''
-$BUCKET       = $env_vars['AWS_S3_BUCKET']      ?? 'koli-media'
+$MINIO_USER = Coalesce $env_vars['MINIO_ROOT_USER'] 'minioadmin'
+$MINIO_PASS = Coalesce $env_vars['MINIO_ROOT_PASSWORD'] ''
+$BUCKET     = Coalesce $env_vars['AWS_S3_BUCKET'] 'koli-media'
 
 # ── 4. Servisleri başlat ──────────────────────────────────────────────────────
 Write-Host ""
 Write-Host "  [..] Servisler baslatiliyor (ilk seferde ~5 dk surebilir)..." -ForegroundColor White
 docker compose -f docker-compose.prod.yml up -d --build
-if ($LASTEXITCODE -ne 0) { Write-Err "docker compose hatasi. 'docker compose -f docker-compose.prod.yml logs' ile inceleyin." }
+if ($LASTEXITCODE -ne 0) { Write-Err "docker compose hatasi. Loglar icin: docker compose -f docker-compose.prod.yml logs" }
 Write-OK "Servisler baslatildi."
 
 # ── 5. MinIO bucket ──────────────────────────────────────────────────────────
@@ -80,8 +75,8 @@ $ready = $false
 while (-not $ready -and $tries -lt 20) {
     Start-Sleep -Seconds 3
     $tries++
-    $result = docker compose -f docker-compose.prod.yml exec -T minio `
-        mc alias set local http://localhost:9000 $MINIO_USER $MINIO_PASS 2>&1
+    docker compose -f docker-compose.prod.yml exec -T minio `
+        mc alias set local http://localhost:9000 $MINIO_USER $MINIO_PASS 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) { $ready = $true }
 }
 
@@ -95,18 +90,18 @@ if ($ready) {
 
 # ── 6. Durum raporu ──────────────────────────────────────────────────────────
 Write-Host ""
-Write-Host "  ─────────────────────────────────────────────────" -ForegroundColor DarkGray
+Write-Host "  -------------------------------------------------" -ForegroundColor DarkGray
 Write-OK "Kurulum tamamlandi!"
 Write-Host ""
 Write-Host "  Servis Durumu:" -ForegroundColor White
 docker compose -f docker-compose.prod.yml ps
 Write-Host ""
-Write-Host "  Erisim URL'leri:" -ForegroundColor White
-Write-Host "    🌐  Web      -> http://localhost:3000" -ForegroundColor Cyan
-Write-Host "    🔌  API      -> http://localhost:4000/api/v1" -ForegroundColor Cyan
-Write-Host "    🗄️   MinIO    -> http://localhost:9001  ($MINIO_USER)" -ForegroundColor Cyan
+Write-Host "  Erisim adresleri:" -ForegroundColor White
+Write-Host "    Web     -> http://localhost:3000" -ForegroundColor Cyan
+Write-Host "    API     -> http://localhost:4000/api/v1" -ForegroundColor Cyan
+Write-Host "    MinIO   -> http://localhost:9001  ($MINIO_USER)" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  Log takibi icin:" -ForegroundColor DarkGray
+Write-Host "  Log takibi:" -ForegroundColor DarkGray
 Write-Host "    docker compose -f docker-compose.prod.yml logs -f api" -ForegroundColor DarkGray
 Write-Host "    docker compose -f docker-compose.prod.yml logs -f web" -ForegroundColor DarkGray
 Write-Host ""
