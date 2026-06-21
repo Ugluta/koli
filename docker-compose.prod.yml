@@ -1,5 +1,3 @@
-version: '3.9'
-
 # ── Koli Production Stack ──────────────────────────────────────────────────────
 # Gereksinimler: docker + docker compose v2
 # Kurulum: ./setup.sh
