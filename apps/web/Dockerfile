@@ -26,9 +26,9 @@ ENV NODE_ENV=production
 
 RUN addgroup -S koli && adduser -S koli -G koli
 
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+RUN if [ -d /app/public ]; then cp -r /app/public ./public; fi
 
 USER koli
 EXPOSE 3000
