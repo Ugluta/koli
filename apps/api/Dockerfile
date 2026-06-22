@@ -1,9 +1,10 @@
-# ── Build stage ───────────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+RUN apk add --no-cache python3 make g++
+
 COPY package*.json ./
-RUN npm install --ignore-scripts
+RUN npm install
 
 COPY . .
 RUN npx nest build
@@ -13,10 +14,11 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN addgroup -S koli && adduser -S koli -G koli
+RUN apk add --no-cache python3 make g++ && \
+    addgroup -S koli && adduser -S koli -G koli
 
 COPY package*.json ./
-RUN npm install --omit=dev --ignore-scripts && npm cache clean --force
+RUN npm install --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
 
