@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-// iyzico posts token to POST /billing/callback/iyzico which redirects here
-// This page just handles the query params passed from the backend redirect
-export default function CallbackPage() {
+function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const success = searchParams.get('success');
@@ -40,5 +38,13 @@ export default function CallbackPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><p className="text-gray-400">Yükleniyor...</p></div>}>
+      <CallbackContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { useSearchParams } from 'next/navigation';
 
@@ -24,7 +24,7 @@ interface Subscription {
   plan: Plan;
 }
 
-export default function UyelikPage() {
+function UyelikContent() {
   const searchParams = useSearchParams();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -210,5 +210,13 @@ function InvoiceHistory() {
         </table>
       </div>
     </div>
+  );
+}
+
+export default function UyelikPage() {
+  return (
+    <Suspense fallback={<p className="text-gray-400">Yükleniyor...</p>}>
+      <UyelikContent />
+    </Suspense>
   );
 }
