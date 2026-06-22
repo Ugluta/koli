@@ -5,7 +5,7 @@ import {
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ScraperService } from './scraper.service';
 import { ScraperSource } from './entities/scraper-source.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('scraper')
 @ApiBearerAuth()

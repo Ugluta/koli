@@ -2,7 +2,7 @@ import { Controller, Get, Post, Delete, Body, Query, Param, ParseUUIDPipe, UseGu
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
 import { SeoService } from './seo.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 const CHUNK = 10_000;
 const BASE_URL = process.env.SITE_URL ?? 'https://koli.app';

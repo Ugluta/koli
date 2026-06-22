@@ -6,7 +6,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
 import { AdsService } from './ads.service';
 import { AdCampaign, AdPlacement, AdStatus } from './entities/ad-campaign.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('ads')
 @Controller('ads')

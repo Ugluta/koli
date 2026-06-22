@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm install --ignore-scripts
 
 COPY . .
-RUN npx tsc --project tsconfig.json
+RUN npx nest build
 
 # ── Production stage ───────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner

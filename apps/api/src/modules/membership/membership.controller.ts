@@ -1,7 +1,7 @@
 import { Controller, Get, Param, ParseUUIDPipe, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { MembershipService } from './membership.service';
 
 @ApiTags('membership')

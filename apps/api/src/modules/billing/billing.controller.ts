@@ -5,7 +5,7 @@ import {
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
 import { BillingService } from './billing.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ConfigService } from '@nestjs/config';
 
 @ApiTags('billing')
