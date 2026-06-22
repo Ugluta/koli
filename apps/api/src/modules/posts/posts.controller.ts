@@ -6,6 +6,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
 import { CreatePostDto, UpdatePostDto, PostListQueryDto } from './dto/post.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PostType } from './entities/post.entity';
 
 @ApiTags('posts')
 @Controller('posts')
@@ -18,8 +19,8 @@ export class PostsController {
   }
 
   @Get('featured')
-  findFeatured(@Query('citySlug') citySlug?: string, @Query('limit') limit?: string) {
-    return this.postsService.findFeatured(citySlug, limit ? parseInt(limit, 10) : 6);
+  findFeatured(@Query('type') type?: string, @Query('limit') limit?: string) {
+    return this.postsService.findFeatured(type as PostType | undefined, limit ? parseInt(limit, 10) : 5);
   }
 
   @Get(':slug')
@@ -42,16 +43,15 @@ export class PostsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePostDto,
-    @Req() req: any,
   ) {
-    return this.postsService.update(id, dto, req.user.userId);
+    return this.postsService.update(id, dto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
-    return this.postsService.remove(id, req.user.userId);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.postsService.remove(id);
   }
 }
