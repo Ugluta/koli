@@ -29,6 +29,7 @@ RUN addgroup -S koli && adduser -S koli -G koli
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 RUN if [ -d /app/public ]; then cp -r /app/public ./public; fi
+RUN mkdir -p .next/cache && chown -R koli:koli /app
 
 USER koli
 EXPOSE 3000
