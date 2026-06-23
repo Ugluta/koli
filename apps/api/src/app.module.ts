@@ -44,7 +44,7 @@ import { MailModule } from './modules/mail/mail.module';
         url: config.getOrThrow<string>('DATABASE_URL'),
         entities: [__dirname + '/modules/**/*.entity{.ts,.js}'],
         migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
-        synchronize: false,
+        synchronize: true,
         logging: config.get('NODE_ENV') === 'development',
         ssl: config.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
       }),
