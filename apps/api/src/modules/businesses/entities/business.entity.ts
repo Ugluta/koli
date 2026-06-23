@@ -39,25 +39,25 @@ export class Business {
   @Column({ name: 'short_description', length: 300, nullable: true })
   shortDescription: string | null;
 
-  @Column({ name: 'logo_url', nullable: true })
+  @Column({ name: 'logo_url', nullable: true, type: 'varchar' })
   logoUrl: string | null;
 
-  @Column({ name: 'cover_url', nullable: true })
+  @Column({ name: 'cover_url', nullable: true, type: 'varchar' })
   coverUrl: string | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   phone: string | null;
 
-  @Column({ name: 'phone_secondary', nullable: true })
+  @Column({ name: 'phone_secondary', nullable: true, type: 'varchar' })
   phoneSecondary: string | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   whatsapp: string | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   email: string | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   website: string | null;
 
   @Column({ type: 'enum', enum: BusinessStatus, default: BusinessStatus.PENDING })

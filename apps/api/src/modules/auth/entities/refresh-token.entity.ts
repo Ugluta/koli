@@ -29,7 +29,7 @@ export class RefreshToken {
   @Column({ name: 'revoked_at', nullable: true, type: 'timestamptz' })
   revokedAt: Date | null;
 
-  @Column({ name: 'ip_address', nullable: true })
+  @Column({ name: 'ip_address', nullable: true, type: 'varchar' })
   ipAddress: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
