@@ -45,13 +45,13 @@ export class User {
   @Column({ name: 'email_verified', default: false })
   emailVerified: boolean;
 
-  @Column({ name: 'email_verify_token', nullable: true, select: false })
+  @Column({ name: 'email_verify_token', nullable: true, select: false, type: 'varchar' })
   emailVerifyToken: string | null;
 
   @Column({ name: 'email_verify_expires', type: 'timestamptz', nullable: true, select: false })
   emailVerifyExpires: Date | null;
 
-  @Column({ name: 'password_reset_token', nullable: true, select: false })
+  @Column({ name: 'password_reset_token', nullable: true, select: false, type: 'varchar' })
   passwordResetToken: string | null;
 
   @Column({ name: 'password_reset_expires', type: 'timestamptz', nullable: true, select: false })
