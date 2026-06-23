@@ -26,7 +26,7 @@ export class Product {
   @Column() name: string;
   @Column() slug: string;
   @Column({ type: 'text', nullable: true }) description: string | null;
-  @Column({ name: 'short_description', length: 500, nullable: true }) shortDescription: string | null;
+  @Column({ name: 'short_description', length: 500, nullable: true, type: 'varchar' }) shortDescription: string | null;
   @Column({ type: 'numeric', precision: 10, scale: 2, nullable: true }) price: number | null;
   @Column({ name: 'price_min', type: 'numeric', precision: 10, scale: 2, nullable: true }) priceMin: number | null;
   @Column({ name: 'price_max', type: 'numeric', precision: 10, scale: 2, nullable: true }) priceMax: number | null;

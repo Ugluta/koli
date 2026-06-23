@@ -36,7 +36,7 @@ export class Business {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ name: 'short_description', length: 300, nullable: true })
+  @Column({ name: 'short_description', length: 300, nullable: true, type: 'varchar' })
   shortDescription: string | null;
 
   @Column({ name: 'logo_url', nullable: true, type: 'varchar' })
