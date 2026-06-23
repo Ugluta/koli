@@ -21,10 +21,10 @@ export class Category {
   @Column({ unique: true })
   slug: string;
 
-  @Column({ name: 'icon_url', nullable: true })
+  @Column({ name: 'icon_url', nullable: true, type: 'varchar' })
   iconUrl: string | null;
 
-  @Column({ name: 'cover_url', nullable: true })
+  @Column({ name: 'cover_url', nullable: true, type: 'varchar' })
   coverUrl: string | null;
 
   @Column({ type: 'text', nullable: true })

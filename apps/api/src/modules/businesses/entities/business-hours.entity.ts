@@ -28,6 +28,6 @@ export class BusinessHours {
   @Column({ name: 'is_24h', default: false })
   is24h: boolean;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   note: string | null;
 }

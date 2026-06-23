@@ -32,13 +32,13 @@ export class Product {
   @Column({ name: 'price_max', type: 'numeric', precision: 10, scale: 2, nullable: true }) priceMax: number | null;
   @Column({ length: 3, default: 'TRY' }) currency: string;
   @Column({ name: 'stock_status', type: 'enum', enum: StockStatus, default: StockStatus.IN_STOCK }) stockStatus: StockStatus;
-  @Column({ nullable: true }) sku: string | null;
+  @Column({ nullable: true, type: 'varchar' }) sku: string | null;
   @Column({ type: 'enum', enum: ProductStatus, default: ProductStatus.DRAFT }) status: ProductStatus;
   @Column({ name: 'sort_order', default: 0 }) sortOrder: number;
   @Column({ name: 'view_count', type: 'bigint', default: 0 }) viewCount: number;
-  @Column({ name: 'seo_title', nullable: true }) seoTitle: string | null;
+  @Column({ name: 'seo_title', nullable: true, type: 'varchar' }) seoTitle: string | null;
   @Column({ name: 'seo_description', type: 'text', nullable: true }) seoDescription: string | null;
-  @Column({ name: 'seo_keywords', nullable: true }) seoKeywords: string | null;
+  @Column({ name: 'seo_keywords', nullable: true, type: 'varchar' }) seoKeywords: string | null;
   @Column({ name: 'schema_markup', type: 'jsonb', nullable: true }) schemaMarkup: Record<string, unknown> | null;
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;

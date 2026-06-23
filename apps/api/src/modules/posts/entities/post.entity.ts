@@ -35,7 +35,7 @@ export class Post {
   @Column({ unique: true }) slug: string;
   @Column({ type: 'text', nullable: true }) excerpt: string | null;
   @Column({ type: 'text', nullable: true }) content: string | null;
-  @Column({ name: 'cover_image_url', nullable: true }) coverImageUrl: string | null;
+  @Column({ name: 'cover_image_url', nullable: true, type: 'varchar' }) coverImageUrl: string | null;
 
   @Column({ type: 'enum', enum: PostStatus, default: PostStatus.DRAFT })
   status: PostStatus;
@@ -44,14 +44,14 @@ export class Post {
   @Column({ name: 'published_at', type: 'timestamptz', nullable: true }) publishedAt: Date | null;
   @Column({ name: 'event_start_at', type: 'timestamptz', nullable: true }) eventStartAt: Date | null;
   @Column({ name: 'event_end_at', type: 'timestamptz', nullable: true }) eventEndAt: Date | null;
-  @Column({ name: 'event_location', nullable: true }) eventLocation: string | null;
+  @Column({ name: 'event_location', nullable: true, type: 'varchar' }) eventLocation: string | null;
   @Column({ name: 'view_count', type: 'bigint', default: 0 }) viewCount: number;
-  @Column({ name: 'seo_title', nullable: true }) seoTitle: string | null;
+  @Column({ name: 'seo_title', nullable: true, type: 'varchar' }) seoTitle: string | null;
   @Column({ name: 'seo_description', type: 'text', nullable: true }) seoDescription: string | null;
-  @Column({ name: 'seo_keywords', nullable: true }) seoKeywords: string | null;
-  @Column({ name: 'og_image_url', nullable: true }) ogImageUrl: string | null;
+  @Column({ name: 'seo_keywords', nullable: true, type: 'varchar' }) seoKeywords: string | null;
+  @Column({ name: 'og_image_url', nullable: true, type: 'varchar' }) ogImageUrl: string | null;
   @Column({ name: 'schema_markup', type: 'jsonb', nullable: true }) schemaMarkup: Record<string, unknown> | null;
-  @Column({ name: 'canonical_url', nullable: true }) canonicalUrl: string | null;
+  @Column({ name: 'canonical_url', nullable: true, type: 'varchar' }) canonicalUrl: string | null;
 
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at' }) updatedAt: Date;

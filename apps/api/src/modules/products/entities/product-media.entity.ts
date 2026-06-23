@@ -16,10 +16,10 @@ export class ProductMedia {
   @Column({ name: 'product_id' }) productId: string;
   @Column({ name: 'media_type', type: 'enum', enum: MediaType, default: MediaType.IMAGE }) mediaType: MediaType;
   @Column() url: string;
-  @Column({ name: 'thumbnail_url', nullable: true }) thumbnailUrl: string | null;
+  @Column({ name: 'thumbnail_url', nullable: true, type: 'varchar' }) thumbnailUrl: string | null;
   @Column({ name: 'sort_order', default: 0 }) sortOrder: number;
-  @Column({ name: 'alt_text', nullable: true }) altText: string | null;
-  @Column({ name: 'file_name', nullable: true }) fileName: string | null;
+  @Column({ name: 'alt_text', nullable: true, type: 'varchar' }) altText: string | null;
+  @Column({ name: 'file_name', nullable: true, type: 'varchar' }) fileName: string | null;
   @Column({ name: 'file_size', type: 'bigint', nullable: true }) fileSize: number | null;
-  @Column({ name: 'mime_type', nullable: true }) mimeType: string | null;
+  @Column({ name: 'mime_type', nullable: true, type: 'varchar' }) mimeType: string | null;
 }

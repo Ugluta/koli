@@ -15,7 +15,7 @@ export enum AdTargetType { CPM = 'cpm', CPC = 'cpc', FLAT = 'flat' }
 export class AdCampaign {
   @PrimaryGeneratedColumn('uuid') id: string;
   @Column({ name: 'advertiser_id' }) advertiserId: string;
-  @Column({ name: 'business_id', nullable: true }) businessId: string | null;
+  @Column({ name: 'business_id', nullable: true, type: 'varchar' }) businessId: string | null;
   @Column() name: string;
   @Column({ type: 'enum', enum: AdStatus, default: AdStatus.DRAFT }) status: AdStatus;
   @Column({ type: 'enum', enum: AdPlacement }) placement: AdPlacement;
@@ -23,15 +23,15 @@ export class AdCampaign {
   @Column({ name: 'budget_cents', default: 0 }) budgetCents: number;
   @Column({ name: 'spent_cents', default: 0 }) spentCents: number;
   @Column({ name: 'bid_cents', default: 0 }) bidCents: number;
-  @Column({ nullable: true }) title: string | null;
-  @Column({ nullable: true }) description: string | null;
-  @Column({ name: 'image_url', nullable: true }) imageUrl: string | null;
+  @Column({ nullable: true, type: 'varchar' }) title: string | null;
+  @Column({ nullable: true, type: 'varchar' }) description: string | null;
+  @Column({ name: 'image_url', nullable: true, type: 'varchar' }) imageUrl: string | null;
   @Column({ name: 'cta_url' }) ctaUrl: string;
-  @Column({ name: 'city_id', nullable: true }) cityId: string | null;
-  @Column({ name: 'category_id', nullable: true }) categoryId: string | null;
-  @Column({ name: 'starts_at', nullable: true }) startsAt: Date | null;
-  @Column({ name: 'ends_at', nullable: true }) endsAt: Date | null;
-  @Column({ name: 'daily_cap_cents', nullable: true }) dailyCapCents: number | null;
+  @Column({ name: 'city_id', nullable: true, type: 'varchar' }) cityId: string | null;
+  @Column({ name: 'category_id', nullable: true, type: 'varchar' }) categoryId: string | null;
+  @Column({ name: 'starts_at', nullable: true, type: 'timestamptz' }) startsAt: Date | null;
+  @Column({ name: 'ends_at', nullable: true, type: 'timestamptz' }) endsAt: Date | null;
+  @Column({ name: 'daily_cap_cents', nullable: true, type: 'numeric' }) dailyCapCents: number | null;
   @Column({ name: 'impression_count', type: 'bigint', default: 0 }) impressionCount: number;
   @Column({ name: 'click_count', type: 'bigint', default: 0 }) clickCount: number;
   @CreateDateColumn({ name: 'created_at' }) createdAt: Date;

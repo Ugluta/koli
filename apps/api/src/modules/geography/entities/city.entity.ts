@@ -20,7 +20,7 @@ export class City {
   @Column({ unique: true })
   slug: string;
 
-  @Column({ name: 'plate_code', nullable: true })
+  @Column({ name: 'plate_code', nullable: true, type: 'varchar' })
   plateCode: string | null;
 
   @Column({ type: 'numeric', precision: 10, scale: 7, nullable: true })
@@ -32,7 +32,7 @@ export class City {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
-  @Column({ name: 'seo_title', nullable: true })
+  @Column({ name: 'seo_title', nullable: true, type: 'varchar' })
   seoTitle: string | null;
 
   @Column({ name: 'seo_description', type: 'text', nullable: true })

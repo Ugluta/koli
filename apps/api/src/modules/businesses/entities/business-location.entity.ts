@@ -15,10 +15,10 @@ export class BusinessLocation {
   @Column({ name: 'business_id' })
   businessId: string;
 
-  @Column({ name: 'address_line1', nullable: true })
+  @Column({ name: 'address_line1', nullable: true, type: 'varchar' })
   addressLine1: string | null;
 
-  @Column({ name: 'address_line2', nullable: true })
+  @Column({ name: 'address_line2', nullable: true, type: 'varchar' })
   addressLine2: string | null;
 
   @ManyToOne(() => City)
@@ -41,12 +41,12 @@ export class BusinessLocation {
   @Column({ type: 'numeric', precision: 10, scale: 7, nullable: true })
   longitude: number | null;
 
-  @Column({ name: 'postal_code', nullable: true })
+  @Column({ name: 'postal_code', nullable: true, type: 'varchar' })
   postalCode: string | null;
 
-  @Column({ name: 'plus_code', nullable: true })
+  @Column({ name: 'plus_code', nullable: true, type: 'varchar' })
   plusCode: string | null;
 
-  @Column({ name: 'map_embed_url', nullable: true })
+  @Column({ name: 'map_embed_url', nullable: true, type: 'varchar' })
   mapEmbedUrl: string | null;
 }
