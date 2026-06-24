@@ -43,7 +43,7 @@ export class AuthController {
     if (payload) {
       return this.authService.refresh(payload.sub, payload.refreshToken, req.ip);
     }
-    return this.authService.refresh(body.refresh_token, body.refresh_token, req.ip);
+    return this.authService.refreshByToken(body.refresh_token, req.ip);
   }
 
   @Post('logout')

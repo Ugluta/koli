@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import { setAuth, clearAuth } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
@@ -60,15 +61,14 @@ apiClient.interceptors.response.use(
         refresh_token: refreshToken,
       });
       const newToken = data.data.access_token;
-      localStorage.setItem('access_token', newToken);
-      localStorage.setItem('refresh_token', data.data.refresh_token);
+      // Keep localStorage AND the middleware cookie in sync on refresh.
+      setAuth(newToken, data.data.refresh_token);
       processQueue(null, newToken);
       originalRequest.headers!.Authorization = `Bearer ${newToken}`;
       return apiClient(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      clearAuth();
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { clearAuth, getToken } from '@/lib/auth';
+import { apiClient } from '@/lib/api/client';
 
 const NAV = [
   { label: 'Dashboard', href: '/admin', icon: '📊' },
@@ -17,18 +19,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [authError, setAuthError] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) { router.push('/login?redirect=/admin'); return; }
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((j) => {
-        const u = j.data ?? j;
+    const token = getToken();
+    if (!token) { clearAuth(); router.push('/login?redirect=/admin'); return; }
+    apiClient
+      .get('/auth/me')
+      .then((r) => {
+        const u = r.data.data ?? r.data;
         if (u?.role !== 'super_admin') { setAuthError(true); return; }
         setUser(u);
       })
-      .catch(() => { localStorage.clear(); router.push('/login'); });
+      .catch(() => { clearAuth(); router.push('/login'); });
   }, [router]);
 
   if (authError) return (
@@ -61,7 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
         <div className="p-4 border-t">
           <a href="/panel" className="text-xs text-gray-400 hover:text-blue-600 block mb-2">← Panele Dön</a>
-          <button onClick={() => { localStorage.clear(); router.push('/login'); }}
+          <button onClick={() => { clearAuth(); router.push('/login'); }}
             className="text-xs text-gray-400 hover:text-red-500">Çıkış Yap</button>
         </div>
       </aside>

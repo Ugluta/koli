@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { clearAuth, getToken } from '@/lib/auth';
+import { apiClient } from '@/lib/api/client';
 
 const NAV = [
   { label: 'Dashboard', href: '/panel', icon: '📊' },
@@ -23,14 +25,12 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     const [user, setUser] = useState<{ email: string; emailVerified?: boolean } | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) { router.push('/login'); return; }
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((j) => setUser(j.data))
-      .catch(() => { localStorage.clear(); router.push('/login'); });
+    const token = getToken();
+    if (!token) { clearAuth(); router.push('/login'); return; }
+    apiClient
+      .get('/auth/me')
+      .then((r) => setUser(r.data.data ?? r.data))
+      .catch(() => { clearAuth(); router.push('/login'); });
   }, [router]);
 
   return (
@@ -58,7 +58,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         </nav>
         <div className="p-4 border-t">
           <button
-            onClick={() => { localStorage.clear(); router.push('/login'); }}
+            onClick={() => { clearAuth(); router.push('/login'); }}
             className="text-xs text-gray-400 hover:text-red-500 transition-colors"
           >
             Çıkış Yap

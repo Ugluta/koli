@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { setAuth } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -38,11 +39,7 @@ function LoginForm() {
       }
 
       const data = json.data ?? json;
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('refresh_token', data.refresh_token);
-      // Cookie so the Next.js middleware can read the token on protected routes
-      const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-      document.cookie = `access_token=${data.access_token}; Path=/; Max-Age=2592000; SameSite=Lax${secure}`;
+      setAuth(data.access_token, data.refresh_token);
       router.push(redirect);
     } catch {
       setError('Sunucuya bağlanılamadı. Lütfen tekrar deneyin.');
