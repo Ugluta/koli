@@ -40,6 +40,9 @@ function LoginForm() {
       const data = json.data ?? json;
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
+      // Cookie so the Next.js middleware can read the token on protected routes
+      const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `access_token=${data.access_token}; Path=/; Max-Age=2592000; SameSite=Lax${secure}`;
       router.push(redirect);
     } catch {
       setError('Sunucuya bağlanılamadı. Lütfen tekrar deneyin.');
