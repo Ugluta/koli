@@ -172,6 +172,30 @@ services:
     networks:
       - koli_public
 
+  # ── Otomatik veritabanı yedeği ───────────────────────────────────────────────
+  db-backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./backups:/backups
+    entrypoint: >
+      sh -c 'while true; do
+        ts=$$(date +%Y%m%d-%H%M%S);
+        echo "[db-backup] dumping koli-$$ts.sql.gz";
+        pg_dump -h postgres -U koli -d koli | gzip > /backups/koli-$$ts.sql.gz || echo "[db-backup] dump failed";
+        ls -1t /backups/koli-*.sql.gz 2>/dev/null | tail -n +15 | xargs -r rm -f;
+        sleep 86400;
+      done'
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - koli_internal
+
 volumes:
   postgres_data:
   redis_data:
