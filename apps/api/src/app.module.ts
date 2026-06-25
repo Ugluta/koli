@@ -21,6 +21,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { SearchModule } from './modules/search/search.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MailModule } from './modules/mail/mail.module';
+import { PlacesScraperModule } from './modules/places-scraper/places-scraper.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { MailModule } from './modules/mail/mail.module';
     SearchModule,
     AdminModule,
     MailModule,
+    PlacesScraperModule,
   ],
 })
 export class AppModule {}
