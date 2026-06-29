@@ -1,5 +1,6 @@
-import { Controller, Get, Param, Query, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Query, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { Public } from '../../common/decorators/public.decorator';
 import { ProductsService } from './products.service';
 
 @ApiTags('Products')
@@ -7,8 +8,9 @@ import { ProductsService } from './products.service';
 export class ProductsController {
   constructor(private readonly service: ProductsService) {}
 
+  @Public()
   @Get()
-  @ApiOperation({ summary: 'Firmaya ait ürünleri listele' })
+  @ApiOperation({ summary: 'Firmaya ait yayındaki ürünleri listele (public)' })
   @ApiQuery({ name: 'businessId', required: true })
   @ApiQuery({ name: 'cursor', required: false })
   @ApiQuery({ name: 'limit', required: false })
@@ -17,6 +19,6 @@ export class ProductsController {
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.service.findByBusiness(businessId, cursor, limit ? parseInt(limit) : 20);
+    return this.service.findByBusiness(businessId, cursor, limit ? parseInt(limit) : 20, true);
   }
 }

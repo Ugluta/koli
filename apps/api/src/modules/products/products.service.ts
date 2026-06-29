@@ -15,13 +15,17 @@ function slugify(text: string): string {
 export class ProductsService {
   constructor(@InjectRepository(Product) private repo: Repository<Product>) {}
 
-  async findByBusiness(businessId: string, cursor?: string, limit = 20) {
+  async findByBusiness(businessId: string, cursor?: string, limit = 20, activeOnly = false) {
     const take = Math.min(limit, 100);
     const qb = this.repo.createQueryBuilder('p')
       .leftJoinAndSelect('p.media', 'm')
-      .where('p.business_id = :businessId AND p.status != :archived', {
-        businessId, archived: ProductStatus.ARCHIVED,
-      });
+      .where('p.business_id = :businessId', { businessId });
+
+    if (activeOnly) {
+      qb.andWhere('p.status = :active', { active: ProductStatus.ACTIVE });
+    } else {
+      qb.andWhere('p.status != :archived', { archived: ProductStatus.ARCHIVED });
+    }
 
     if (cursor) {
       try {

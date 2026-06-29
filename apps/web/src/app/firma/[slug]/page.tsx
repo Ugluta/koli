@@ -22,7 +22,7 @@ async function getBusiness(slug: string) {
 
 async function getProducts(businessId: string) {
   try {
-    const res = await fetch(`${API_URL}/panel/businesses/${businessId}/products?limit=12`, { next: { revalidate: 300 } });
+    const res = await fetch(`${API_URL}/products?businessId=${businessId}&limit=12`, { next: { revalidate: 300 } });
     const json = await res.json();
     return json.data?.data ?? json.data ?? [];
   } catch { return []; }
@@ -30,7 +30,7 @@ async function getProducts(businessId: string) {
 
 async function getServices(businessId: string) {
   try {
-    const res = await fetch(`${API_URL}/panel/businesses/${businessId}/services?limit=12`, { next: { revalidate: 300 } });
+    const res = await fetch(`${API_URL}/services?businessId=${businessId}`, { next: { revalidate: 300 } });
     const json = await res.json();
     return json.data ?? [];
   } catch { return []; }
@@ -38,7 +38,7 @@ async function getServices(businessId: string) {
 
 async function getGallery(businessId: string) {
   try {
-    const res = await fetch(`${API_URL}/panel/businesses/${businessId}/gallery`, { next: { revalidate: 300 } });
+    const res = await fetch(`${API_URL}/businesses/${businessId}/gallery`, { next: { revalidate: 300 } });
     const json = await res.json();
     return json.data ?? json ?? [];
   } catch { return []; }

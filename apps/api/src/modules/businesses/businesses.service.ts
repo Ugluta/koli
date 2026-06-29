@@ -5,6 +5,7 @@ import { Business, BusinessStatus } from './entities/business.entity';
 import { BusinessLocation } from './entities/business-location.entity';
 import { BusinessHours } from './entities/business-hours.entity';
 import { BusinessSocialLink, SocialPlatform } from './entities/business-social-link.entity';
+import { BusinessMedia } from './entities/business-media.entity';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
 import { SearchService } from '../search/search.service';
@@ -25,9 +26,17 @@ export class BusinessesService {
   constructor(
     @InjectRepository(Business) private businessesRepo: Repository<Business>,
     @InjectRepository(BusinessLocation) private locationsRepo: Repository<BusinessLocation>,
+    @InjectRepository(BusinessMedia) private mediaRepo: Repository<BusinessMedia>,
     private dataSource: DataSource,
     @Optional() private searchService?: SearchService,
   ) {}
+
+  findGallery(businessId: string): Promise<BusinessMedia[]> {
+    return this.mediaRepo.find({
+      where: { businessId },
+      order: { sortOrder: 'ASC', createdAt: 'ASC' },
+    });
+  }
 
   async create(dto: CreateBusinessDto, ownerId: string): Promise<Business> {
     return this.dataSource.transaction(async (manager) => {

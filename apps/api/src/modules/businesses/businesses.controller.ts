@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -27,6 +27,13 @@ export class BusinessesController {
     @Query('limit') limit?: number,
   ) {
     return this.businessesService.findAll({ citySlug: city, categorySlug: category, q, cursor, limit });
+  }
+
+  @Public()
+  @Get(':businessId/gallery')
+  @ApiOperation({ summary: 'List business gallery images (public)' })
+  getGallery(@Param('businessId', ParseUUIDPipe) businessId: string) {
+    return this.businessesService.findGallery(businessId);
   }
 
   @Public()
