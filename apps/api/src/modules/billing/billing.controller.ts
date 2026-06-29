@@ -11,7 +11,21 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User, UserRole } from '../auth/entities/user.entity';
 import { BusinessesService } from '../businesses/businesses.service';
+import { BillingCycle } from '../../common/enums/billing-cycle.enum';
 import { ConfigService } from '@nestjs/config';
+import { IsUUID, IsInt, Min, IsEnum, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class InitUpgradeDto {
+  @IsUUID() businessId: string;
+  @IsInt() @Min(1) @Type(() => Number) planId: number;
+  @IsOptional() @IsEnum(BillingCycle) cycle?: BillingCycle;
+}
+
+class ManualUpgradeDto {
+  @IsUUID() businessId: string;
+  @IsInt() @Min(1) @Type(() => Number) planId: number;
+}
 
 @ApiTags('billing')
 @Controller('billing')
@@ -27,20 +41,19 @@ export class BillingController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   async initUpgrade(
-    @Body() body: { businessId: string; planId: string; planName: string; amountCents: number },
+    @Body() body: InitUpgradeDto,
     @Req() req: any,
-    @CurrentUser() owner: User,
+    @CurrentUser() user: User,
   ) {
-    await this.businessesService.assertOwner(body.businessId, owner.id);
-    const user = req.user;
+    await this.businessesService.assertOwner(body.businessId, user.id);
+    const cycle = body.cycle && Object.values(BillingCycle).includes(body.cycle) ? body.cycle : BillingCycle.MONTHLY;
     return this.billingService.initUpgrade({
-      userId: user.userId,
+      userId: user.id,
       businessId: body.businessId,
-      planId: body.planId,
-      planName: body.planName,
-      amountCents: body.amountCents,
+      planId: Number(body.planId),
+      cycle,
       userEmail: user.email,
-      userName: user.email.split('@')[0],
+      userName: user.email?.split('@')[0] ?? 'Kullanıcı',
       ip: req.ip ?? '0.0.0.0',
     });
   }
@@ -61,8 +74,8 @@ export class BillingController {
   @Get('invoices')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  myInvoices(@Req() req: any, @Query('page') page?: string) {
-    return this.billingService.myInvoices(req.user.userId, page ? parseInt(page, 10) : 1);
+  myInvoices(@CurrentUser() user: User, @Query('page') page?: string) {
+    return this.billingService.myInvoices(user.id, page ? parseInt(page, 10) : 1);
   }
 
   /** Admin: list all invoices */
@@ -81,9 +94,9 @@ export class BillingController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   manualUpgrade(
-    @Body() body: { businessId: string; planId: string },
-    @Req() req: any,
+    @Body() body: ManualUpgradeDto,
+    @CurrentUser() admin: User,
   ) {
-    return this.billingService.manualUpgrade(body.businessId, body.planId, req.user.userId);
+    return this.billingService.manualUpgrade(body.businessId, Number(body.planId), admin.id);
   }
 }

@@ -2,6 +2,7 @@ import {
   Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn,
 } from 'typeorm';
 import { MembershipPlan } from './membership-plan.entity';
+import { BillingCycle } from '../../../common/enums/billing-cycle.enum';
 
 export enum SubscriptionStatus { TRIAL='trial', ACTIVE='active', PAST_DUE='past_due', CANCELLED='cancelled' }
 
@@ -11,6 +12,7 @@ export class MembershipSubscription {
   @Column({ name: 'business_id', unique: true }) businessId: string;
   @ManyToOne(() => MembershipPlan, { eager: true }) @JoinColumn({ name: 'plan_id' }) plan: MembershipPlan;
   @Column({ name: 'plan_id' }) planId: number;
+  @Column({ name: 'billing_cycle', type: 'enum', enum: BillingCycle, nullable: true }) billingCycle: BillingCycle | null;
   @Column({ type: 'enum', enum: SubscriptionStatus, default: SubscriptionStatus.ACTIVE }) status: SubscriptionStatus;
   @CreateDateColumn({ name: 'started_at' }) startedAt: Date;
   @Column({ name: 'expires_at', nullable: true, type: 'timestamptz' }) expiresAt: Date | null;

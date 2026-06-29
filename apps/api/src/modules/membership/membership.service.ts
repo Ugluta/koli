@@ -12,8 +12,27 @@ export class MembershipService {
     private dataSource: DataSource,
   ) {}
 
-  findAllPlans() {
-    return this.plansRepo.find({ where: { isActive: true }, order: { sortOrder: 'ASC' } });
+  async findAllPlans() {
+    const plans = await this.plansRepo.find({ where: { isActive: true }, order: { sortOrder: 'ASC' } });
+    // numeric columns come back as strings from pg — normalise to numbers for the client
+    return plans.map((p) => ({
+      id: p.id,
+      name: p.name,
+      displayName: p.displayName,
+      priceMonthly: Number(p.priceMonthly),
+      priceYearly: Number(p.priceYearly),
+      priceOnetime: Number(p.priceOnetime),
+      maxProducts: p.maxProducts,
+      maxServices: p.maxServices,
+      maxImages: p.maxImages,
+      maxCampaigns: p.maxCampaigns,
+      canUploadVideo: p.canUploadVideo,
+      canAddFiles: p.canAddFiles,
+      canUseWhatsapp: p.canUseWhatsapp,
+      canAppearFeatured: p.canAppearFeatured,
+      analyticsDays: p.analyticsDays,
+      sortOrder: p.sortOrder,
+    }));
   }
 
   async getOrCreateSubscription(businessId: string): Promise<MembershipSubscription> {

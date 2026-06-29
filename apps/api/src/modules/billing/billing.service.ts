@@ -4,6 +4,14 @@ import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { BillingInvoice, PaymentStatus, PaymentProvider } from './entities/billing-invoice.entity';
 import { IyzicoProvider } from './providers/iyzico.provider';
+import { MembershipPlan, MembershipPlanName } from '../membership/entities/membership-plan.entity';
+import { BillingCycle, BILLING_CYCLE_DAYS } from '../../common/enums/billing-cycle.enum';
+
+const CYCLE_LABEL: Record<BillingCycle, string> = {
+  [BillingCycle.MONTHLY]: 'Aylık',
+  [BillingCycle.YEARLY]: 'Yıllık',
+  [BillingCycle.ONE_TIME]: 'Tek Ödeme (Ömür Boyu)',
+};
 
 @Injectable()
 export class BillingService {
@@ -11,38 +19,72 @@ export class BillingService {
 
   constructor(
     @InjectRepository(BillingInvoice) private invoicesRepo: Repository<BillingInvoice>,
+    @InjectRepository(MembershipPlan) private plansRepo: Repository<MembershipPlan>,
     private dataSource: DataSource,
     private iyzico: IyzicoProvider,
     private config: ConfigService,
   ) {}
+
+  /** Server-authoritative price (in TRY) for a plan + cycle. Never trusts the client. */
+  private priceForCycle(plan: MembershipPlan, cycle: BillingCycle): number {
+    const raw =
+      cycle === BillingCycle.MONTHLY ? plan.priceMonthly :
+      cycle === BillingCycle.YEARLY ? plan.priceYearly :
+      plan.priceOnetime;
+    // numeric columns come back as strings from pg
+    return Number(raw) || 0;
+  }
+
+  /** Period end date (YYYY-MM-DD) for a cycle, or null for lifetime/one-time. */
+  private periodEndFor(cycle: BillingCycle): string | null {
+    const days = BILLING_CYCLE_DAYS[cycle];
+    if (days === null) return null;
+    return new Date(Date.now() + days * 86400000).toISOString().substring(0, 10);
+  }
 
   // ──── Initiate upgrade checkout ───────────────────────────────────────────
 
   async initUpgrade(params: {
     userId: string;
     businessId: string;
-    planId: string;
-    planName: string;
-    amountCents: number;
+    planId: number;
+    cycle: BillingCycle;
     userEmail: string;
     userName: string;
     ip: string;
   }) {
+    const plan = await this.plansRepo.findOne({ where: { id: params.planId } });
+    if (!plan || !plan.isActive) throw new NotFoundException('Plan not found');
+    if (plan.name === MembershipPlanName.FREE) {
+      throw new BadRequestException('Ücretsiz plan için ödeme alınmaz.');
+    }
+
+    // Price is derived on the server from the plan — the client cannot influence it.
+    const price = this.priceForCycle(plan, params.cycle);
+    if (price <= 0) {
+      throw new BadRequestException('Bu plan bu ödeme periyodu için satışta değil.');
+    }
+    const amountCents = Math.round(price * 100);
+    const priceStr = price.toFixed(2);
+
     const siteUrl = this.config.get('SITE_URL', 'https://koli.app');
     const callbackUrl = `${siteUrl}/panel/uyelik/callback`;
+    const periodStart = new Date().toISOString().substring(0, 10);
+    const periodEnd = this.periodEndFor(params.cycle);
 
     // Create pending invoice first
     const invoice = await this.invoicesRepo.save(
       this.invoicesRepo.create({
         userId: params.userId,
         businessId: params.businessId,
-        planId: params.planId,
+        planId: String(plan.id),
         provider: PaymentProvider.IYZICO,
-        amountCents: params.amountCents,
+        amountCents,
+        billingCycle: params.cycle,
         currency: 'TRY',
         status: PaymentStatus.PENDING,
-        periodStart: new Date().toISOString().substring(0, 10),
-        periodEnd: new Date(Date.now() + 30 * 86400000).toISOString().substring(0, 10),
+        periodStart,
+        periodEnd,
       }),
     );
 
@@ -50,8 +92,8 @@ export class BillingService {
     const lastName = rest.join(' ') || 'User';
 
     const result = await this.iyzico.initCheckoutForm({
-      price: (params.amountCents / 100).toFixed(2),
-      paidPrice: (params.amountCents / 100).toFixed(2),
+      price: priceStr,
+      paidPrice: priceStr,
       currency: 'TRY',
       basketId: invoice.id,
       callbackUrl,
@@ -74,11 +116,11 @@ export class BillingService {
       },
       basketItems: [
         {
-          id: params.planId,
-          name: `${params.planName} Üyelik Paketi`,
+          id: String(plan.id),
+          name: `${plan.displayName} — ${CYCLE_LABEL[params.cycle]}`,
           category1: 'Üyelik',
           itemType: 'VIRTUAL',
-          price: (params.amountCents / 100).toFixed(2),
+          price: priceStr,
         },
       ],
     });
@@ -137,49 +179,43 @@ export class BillingService {
         [providerPaymentId, invoiceId],
       );
 
-      // Upgrade or create subscription
-      const existing = await manager.query(
-        `SELECT id FROM membership_subscriptions WHERE business_id = $1 AND status = 'active'`,
-        [invoice.businessId],
+      // Upsert subscription (business_id is unique). expires_at NULL => lifetime.
+      await manager.query(
+        `INSERT INTO membership_subscriptions (business_id, plan_id, status, billing_cycle, started_at, expires_at)
+         VALUES ($1, $2, 'active', $3, NOW(), $4)
+         ON CONFLICT (business_id) DO UPDATE
+           SET plan_id = EXCLUDED.plan_id,
+               status = 'active',
+               billing_cycle = EXCLUDED.billing_cycle,
+               expires_at = EXCLUDED.expires_at,
+               cancelled_at = NULL`,
+        [invoice.businessId, invoice.planId, invoice.billingCycle, invoice.periodEnd],
       );
-
-      const endDate = invoice.periodEnd ?? new Date(Date.now() + 30 * 86400000).toISOString().substring(0, 10);
-
-      if (existing.length > 0) {
-        await manager.query(
-          `UPDATE membership_subscriptions SET plan_id = $1, ends_at = $2, updated_at = NOW() WHERE id = $3`,
-          [invoice.planId, endDate, existing[0].id],
-        );
-      } else {
-        await manager.query(
-          `INSERT INTO membership_subscriptions (business_id, plan_id, status, starts_at, ends_at)
-           VALUES ($1, $2, 'active', $3, $4)`,
-          [invoice.businessId, invoice.planId, invoice.periodStart, endDate],
-        );
-      }
     });
   }
 
   // ──── Manual upgrade (admin) ──────────────────────────────────────────────
 
-  async manualUpgrade(businessId: string, planId: string, adminUserId: string): Promise<void> {
-    await this.dataSource.transaction(async (manager) => {
-      const invoice = await this.invoicesRepo.save(
-        this.invoicesRepo.create({
-          userId: adminUserId,
-          businessId,
-          planId,
-          provider: PaymentProvider.MANUAL,
-          amountCents: 0,
-          currency: 'TRY',
-          status: PaymentStatus.PAID,
-          paidAt: new Date(),
-          periodStart: new Date().toISOString().substring(0, 10),
-          periodEnd: new Date(Date.now() + 365 * 86400000).toISOString().substring(0, 10),
-        }),
-      );
-      await this.activateSubscription(invoice.id, 'manual');
-    });
+  async manualUpgrade(businessId: string, planId: number, adminUserId: string): Promise<void> {
+    const plan = await this.plansRepo.findOne({ where: { id: planId } });
+    if (!plan) throw new NotFoundException('Plan not found');
+
+    // Create as PENDING so activateSubscription (idempotent on PAID) actually runs.
+    const invoice = await this.invoicesRepo.save(
+      this.invoicesRepo.create({
+        userId: adminUserId,
+        businessId,
+        planId: String(plan.id),
+        provider: PaymentProvider.MANUAL,
+        amountCents: 0,
+        billingCycle: BillingCycle.YEARLY,
+        currency: 'TRY',
+        status: PaymentStatus.PENDING,
+        periodStart: new Date().toISOString().substring(0, 10),
+        periodEnd: this.periodEndFor(BillingCycle.YEARLY),
+      }),
+    );
+    await this.activateSubscription(invoice.id, 'manual');
   }
 
   // ──── Listing ─────────────────────────────────────────────────────────────

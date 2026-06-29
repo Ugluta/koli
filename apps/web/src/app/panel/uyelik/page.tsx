@@ -4,33 +4,56 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { apiClient } from '@/lib/api/client';
 import { useSearchParams } from 'next/navigation';
 
+type BillingCycle = 'monthly' | 'yearly' | 'one_time';
+
+const CYCLES: { key: BillingCycle; label: string; suffix: string }[] = [
+  { key: 'monthly', label: 'Aylık', suffix: '/ay' },
+  { key: 'yearly', label: 'Yıllık', suffix: '/yıl' },
+  { key: 'one_time', label: 'Tek Ödeme', suffix: 'tek seferlik' },
+];
+
+const CYCLE_LABEL: Record<BillingCycle, string> = {
+  monthly: 'Aylık', yearly: 'Yıllık', one_time: 'Tek Ödeme',
+};
+
 interface Plan {
-  id: string;
+  id: number;
   name: string;
-  priceCents: number;
+  displayName: string;
+  priceMonthly: number;
+  priceYearly: number;
+  priceOnetime: number;
   maxProducts: number | null;
   maxServices: number | null;
   maxImages: number | null;
   canUploadVideo: boolean;
-  canUploadFiles: boolean;
-  isFeatured: boolean;
+  canAddFiles: boolean;
+  canAppearFeatured: boolean;
 }
 
 interface Subscription {
   id: string;
-  planId: string;
+  planId: number;
   status: string;
-  endsAt: string | null;
-  plan: Plan;
+  expiresAt: string | null;
+  billingCycle: BillingCycle | null;
+  plan: { id: number; name: string; displayName: string };
 }
+
+function priceFor(plan: Plan, cycle: BillingCycle): number {
+  return cycle === 'monthly' ? plan.priceMonthly : cycle === 'yearly' ? plan.priceYearly : plan.priceOnetime;
+}
+
+const fmt = (n: number) => n.toLocaleString('tr-TR');
 
 function UyelikContent() {
   const searchParams = useSearchParams();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [checkoutHtml, setCheckoutHtml] = useState<string | null>(null);
-  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [upgrading, setUpgrading] = useState<number | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
   const success = searchParams.get('success');
@@ -42,7 +65,7 @@ function UyelikContent() {
       apiClient.get('/membership/my').catch(() => ({ data: null })),
     ]).then(([plansRes, subRes]) => {
       setPlans(plansRes.data?.data ?? plansRes.data ?? []);
-      setSubscription(subRes.data);
+      setSubscription(subRes.data?.data ?? subRes.data ?? null);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -59,7 +82,7 @@ function UyelikContent() {
     setUpgrading(plan.id);
     try {
       const bizRes = await apiClient.get('/panel/businesses').catch(() => ({ data: { data: [] } }));
-      const businessId = bizRes.data?.data?.[0]?.id;
+      const businessId = bizRes.data?.data?.[0]?.id ?? bizRes.data?.[0]?.id;
       if (!businessId) {
         alert('Önce bir işletme kaydı oluşturun.');
         return;
@@ -67,8 +90,7 @@ function UyelikContent() {
       const r = await apiClient.post('/billing/upgrade', {
         businessId,
         planId: plan.id,
-        planName: plan.name,
-        amountCents: plan.priceCents,
+        cycle,
       });
       if (r.data.htmlContent) setCheckoutHtml(r.data.htmlContent);
     } catch (e: any) {
@@ -109,38 +131,69 @@ function UyelikContent() {
 
       {subscription && (
         <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-6 text-sm text-blue-700">
-          Aktif plan: <strong>{subscription.plan?.name ?? subscription.planId}</strong>
-          {subscription.endsAt && (
-            <> — {new Date(subscription.endsAt).toLocaleDateString('tr-TR')} tarihine kadar</>
-          )}
+          Aktif plan: <strong>{subscription.plan?.displayName ?? subscription.plan?.name ?? subscription.planId}</strong>
+          {subscription.billingCycle && <> ({CYCLE_LABEL[subscription.billingCycle]})</>}
+          {subscription.expiresAt
+            ? <> — {new Date(subscription.expiresAt).toLocaleDateString('tr-TR')} tarihine kadar</>
+            : subscription.billingCycle === 'one_time' && <> — süresiz</>}
         </div>
       )}
+
+      {/* Billing cycle selector */}
+      <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1 mb-8">
+        {CYCLES.map((c) => (
+          <button
+            key={c.key}
+            onClick={() => setCycle(c.key)}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${
+              cycle === c.key ? 'bg-blue-600 text-white' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {c.label}
+            {c.key === 'yearly' && <span className="ml-1 text-xs opacity-80">2 ay ücretsiz</span>}
+          </button>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
         {plans.map((plan) => {
           const isCurrent = subscription?.planId === plan.id;
-          const isFree = plan.priceCents === 0;
+          const isFree = plan.name === 'free' || priceFor(plan, cycle) === 0;
+          const price = priceFor(plan, cycle);
+          const suffix = CYCLES.find((c) => c.key === cycle)!.suffix;
+          // monthly-equivalent saving for yearly
+          const yearlySaving = cycle === 'yearly' && plan.priceMonthly > 0
+            ? Math.round((1 - plan.priceYearly / (plan.priceMonthly * 12)) * 100)
+            : 0;
           return (
             <div
               key={plan.id}
               className={`bg-white border rounded-2xl p-5 flex flex-col ${
-                plan.isFeatured ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-200'
+                plan.canAppearFeatured ? 'border-blue-500 ring-2 ring-blue-500' : 'border-gray-200'
               }`}
             >
-              {plan.isFeatured && (
+              {plan.canAppearFeatured && (
                 <div className="text-xs font-semibold text-blue-600 bg-blue-50 rounded-full px-2 py-0.5 self-start mb-3">
                   Önerilen
                 </div>
               )}
-              <h2 className="text-lg font-bold mb-1">{plan.name}</h2>
-              <div className="text-3xl font-bold mb-4">
+              <h2 className="text-lg font-bold mb-1">{plan.displayName}</h2>
+              <div className="text-3xl font-bold mb-1">
                 {isFree ? (
                   <span className="text-gray-400">Ücretsiz</span>
                 ) : (
                   <>
-                    {(plan.priceCents / 100).toLocaleString('tr-TR')} ₺
-                    <span className="text-sm font-normal text-gray-400">/ay</span>
+                    {fmt(price)} ₺
+                    <span className="text-sm font-normal text-gray-400"> {suffix}</span>
                   </>
+                )}
+              </div>
+              <div className="h-5 mb-3">
+                {cycle === 'yearly' && yearlySaving > 0 && (
+                  <span className="text-xs font-medium text-green-600">%{yearlySaving} indirim</span>
+                )}
+                {cycle === 'one_time' && !isFree && (
+                  <span className="text-xs font-medium text-purple-600">Ömür boyu erişim</span>
                 )}
               </div>
               <ul className="space-y-1.5 text-sm text-gray-600 flex-1 mb-6">
@@ -148,8 +201,8 @@ function UyelikContent() {
                 <li className="flex items-center gap-2"><span className="text-green-500 text-xs">✓</span>{plan.maxServices === null ? 'Sınırsız' : plan.maxServices} Hizmet</li>
                 <li className="flex items-center gap-2"><span className="text-green-500 text-xs">✓</span>{plan.maxImages === null ? 'Sınırsız' : plan.maxImages} Görsel</li>
                 {plan.canUploadVideo && <li className="flex items-center gap-2"><span className="text-green-500 text-xs">✓</span>Video Yükleme</li>}
-                {plan.canUploadFiles && <li className="flex items-center gap-2"><span className="text-green-500 text-xs">✓</span>Dosya Yükleme</li>}
-                {plan.isFeatured && <li className="flex items-center gap-2"><span className="text-green-500 text-xs">✓</span>Öne Çıkarma</li>}
+                {plan.canAddFiles && <li className="flex items-center gap-2"><span className="text-green-500 text-xs">✓</span>Dosya Yükleme</li>}
+                {plan.canAppearFeatured && <li className="flex items-center gap-2"><span className="text-green-500 text-xs">✓</span>Öne Çıkarma</li>}
               </ul>
               <button
                 disabled={isCurrent || isFree || upgrading === plan.id}
@@ -185,6 +238,7 @@ function InvoiceHistory() {
 
   const STATUS_TR: Record<string, string> = { pending: 'Bekliyor', paid: 'Ödendi', failed: 'Başarısız', refunded: 'İade', cancelled: 'İptal' };
   const STATUS_COLOR: Record<string, string> = { paid: 'text-green-600', failed: 'text-red-600', pending: 'text-yellow-600' };
+  const CYCLE_TR: Record<string, string> = { monthly: 'Aylık', yearly: 'Yıllık', one_time: 'Tek Ödeme' };
 
   return (
     <div>
@@ -194,6 +248,7 @@ function InvoiceHistory() {
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Tarih</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Periyot</th>
               <th className="text-right px-4 py-3 font-medium text-gray-600">Tutar</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Durum</th>
             </tr>
@@ -202,6 +257,7 @@ function InvoiceHistory() {
             {invoices.map((inv) => (
               <tr key={inv.id}>
                 <td className="px-4 py-3 text-gray-600">{new Date(inv.createdAt).toLocaleDateString('tr-TR')}</td>
+                <td className="px-4 py-3 text-gray-600">{CYCLE_TR[inv.billingCycle] ?? '—'}</td>
                 <td className="px-4 py-3 text-right font-medium">{(inv.amountCents / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺</td>
                 <td className={`px-4 py-3 font-medium ${STATUS_COLOR[inv.status] ?? 'text-gray-600'}`}>{STATUS_TR[inv.status] ?? inv.status}</td>
               </tr>
