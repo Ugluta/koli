@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { MembershipPlan, MembershipPlanName } from './entities/membership-plan.entity';
@@ -33,6 +33,21 @@ export class MembershipService {
       analyticsDays: p.analyticsDays,
       sortOrder: p.sortOrder,
     }));
+  }
+
+  // ──── Admin plan management ───────────────────────────────────────────────
+
+  findAllPlansAdmin() {
+    return this.plansRepo.find({ order: { sortOrder: 'ASC' } });
+  }
+
+  async updatePlan(id: number, dto: Partial<MembershipPlan>): Promise<MembershipPlan> {
+    const plan = await this.plansRepo.findOne({ where: { id } });
+    if (!plan) throw new NotFoundException('Plan not found');
+    // name is the stable enum key — never editable from the panel
+    const { id: _ignore, name: _name, ...editable } = dto as Record<string, unknown>;
+    Object.assign(plan, editable);
+    return this.plansRepo.save(plan);
   }
 
   async getOrCreateSubscription(businessId: string): Promise<MembershipSubscription> {

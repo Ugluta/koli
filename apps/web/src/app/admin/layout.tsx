@@ -10,6 +10,10 @@ const NAV = [
   { label: 'Dashboard', href: '/admin', icon: '📊' },
   { label: 'Firmalar', href: '/admin/firmalar', icon: '🏢' },
   { label: 'Kullanıcılar', href: '/admin/kullanicilar', icon: '👥' },
+  { label: 'İçerik', href: '/admin/icerik', icon: '✍️' },
+  { label: 'Kategoriler', href: '/admin/kategoriler', icon: '🗂️' },
+  { label: 'Reklamlar', href: '/admin/reklamlar', icon: '📢' },
+  { label: 'Planlar', href: '/admin/planlar', icon: '⭐' },
   { label: 'Faturalar', href: '/admin/faturalar', icon: '🧾' },
   { label: 'Scraper', href: '/admin/scraper', icon: '🤖' },
 ];

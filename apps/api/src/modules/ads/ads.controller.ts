@@ -7,6 +7,9 @@ import { FastifyReply } from 'fastify';
 import { AdsService } from './ads.service';
 import { AdCampaign, AdPlacement, AdStatus } from './entities/ad-campaign.entity';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '../auth/entities/user.entity';
 
 @ApiTags('ads')
 @Controller('ads')
@@ -88,14 +91,16 @@ export class AdsController {
   // ──── Admin endpoints ──────────────────────────────────────────────────
 
   @Get('admin/all')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   adminList(@Query('page') page?: string) {
     return this.adsService.listAllCampaigns(page ? parseInt(page, 10) : 1);
   }
 
   @Patch('admin/:id/status')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   setStatus(
     @Param('id', ParseUUIDPipe) id: string,
@@ -105,7 +110,8 @@ export class AdsController {
   }
 
   @Get('admin/:id/stats')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   adminStats(
     @Param('id', ParseUUIDPipe) id: string,

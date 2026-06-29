@@ -154,6 +154,34 @@ export class PostsService {
     await this.postsRepo.softDelete(id);
   }
 
+  // ──── Admin moderation ────────────────────────────────────────────────────
+
+  async findAllForAdmin(opts: { status?: PostStatus; type?: PostType; page?: number; limit?: number }) {
+    const page = opts.page ?? 1;
+    const limit = Math.min(opts.limit ?? 20, 100);
+    const where: Record<string, unknown> = {};
+    if (opts.status) where.status = opts.status;
+    if (opts.type) where.postType = opts.type;
+
+    const [data, total] = await this.postsRepo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return { data, meta: { total, page, limit } };
+  }
+
+  async setStatus(id: string, status: PostStatus): Promise<Post> {
+    const post = await this.postsRepo.findOne({ where: { id } });
+    if (!post) throw new NotFoundException('Post not found');
+    post.status = status;
+    if (status === PostStatus.PUBLISHED && !post.publishedAt) {
+      post.publishedAt = new Date();
+    }
+    return this.postsRepo.save(post);
+  }
+
   async incrementViewCount(id: string): Promise<void> {
     await this.postsRepo.increment({ id }, 'viewCount', 1);
   }
