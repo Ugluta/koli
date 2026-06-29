@@ -43,7 +43,8 @@ export default function PanelDashboard() {
       }
 
       if (subRes.status === 'fulfilled') {
-        setStats((s) => ({ ...s, planName: subRes.value.data?.plan?.name ?? 'Free' }));
+        const sub = subRes.value.data?.data ?? subRes.value.data;
+        setStats((s) => ({ ...s, planName: sub?.plan?.displayName ?? sub?.plan?.name ?? 'Ücretsiz' }));
       }
 
       if (queueRes.status === 'fulfilled') {
