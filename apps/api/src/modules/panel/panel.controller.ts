@@ -104,7 +104,11 @@ export class PanelController {
   // ── Membership ────────────────────────────────────────────────────
   @Get('membership')
   @ApiOperation({ summary: 'Get current membership plan' })
-  getMembership(@Param('businessId', ParseUUIDPipe) businessId: string) {
+  async getMembership(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.businessesService.assertOwner(businessId, user.id);
     return this.membershipService.getOrCreateSubscription(businessId);
   }
 
@@ -113,11 +117,13 @@ export class PanelController {
   @ApiOperation({ summary: 'List business products' })
   @ApiQuery({ name: 'cursor', required: false })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  getProducts(
+  async getProducts(
     @Param('businessId', ParseUUIDPipe) businessId: string,
+    @CurrentUser() user: User,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: number,
   ) {
+    await this.businessesService.assertOwner(businessId, user.id);
     return this.productsService.findByBusiness(businessId, cursor, limit);
   }
 
@@ -172,7 +178,11 @@ export class PanelController {
   // ── Services ──────────────────────────────────────────────────────
   @Get('services')
   @ApiOperation({ summary: 'List business services' })
-  getServices(@Param('businessId', ParseUUIDPipe) businessId: string) {
+  async getServices(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.businessesService.assertOwner(businessId, user.id);
     return this.servicesService.findByBusiness(businessId);
   }
 
@@ -216,7 +226,11 @@ export class PanelController {
   // ── Gallery ───────────────────────────────────────────────────────
   @Get('gallery')
   @ApiOperation({ summary: 'List business gallery images' })
-  async getGallery(@Param('businessId', ParseUUIDPipe) businessId: string) {
+  async getGallery(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.businessesService.assertOwner(businessId, user.id);
     return this.galleryRepo.find({ where: { businessId }, order: { sortOrder: 'ASC', createdAt: 'ASC' } });
   }
 

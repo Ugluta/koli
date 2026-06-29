@@ -2,12 +2,18 @@ import { Controller, Get, Param, ParseUUIDPipe, UseGuards, Req } from '@nestjs/c
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../auth/entities/user.entity';
+import { BusinessesService } from '../businesses/businesses.service';
 import { MembershipService } from './membership.service';
 
 @ApiTags('membership')
 @Controller('membership')
 export class MembershipController {
-  constructor(private membershipService: MembershipService) {}
+  constructor(
+    private membershipService: MembershipService,
+    private businessesService: BusinessesService,
+  ) {}
 
   @Public()
   @Get('plans')
@@ -27,7 +33,11 @@ export class MembershipController {
   @Get('business/:businessId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  forBusiness(@Param('businessId', ParseUUIDPipe) businessId: string) {
+  async forBusiness(
+    @Param('businessId', ParseUUIDPipe) businessId: string,
+    @CurrentUser() user: User,
+  ) {
+    await this.businessesService.assertOwner(businessId, user.id);
     return this.membershipService.getOrCreateSubscription(businessId);
   }
 }

@@ -182,6 +182,7 @@ export class BusinessesService {
       relations: ['location', 'location.city', 'hours', 'socialLinks'],
     });
     if (!business) throw new NotFoundException('Business not found');
+    if (ownerId && business.ownerId !== ownerId) throw new ForbiddenException('Access denied');
     return business;
   }
 

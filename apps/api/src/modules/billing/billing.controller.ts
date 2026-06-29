@@ -6,6 +6,11 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { FastifyReply } from 'fastify';
 import { BillingService } from './billing.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User, UserRole } from '../auth/entities/user.entity';
+import { BusinessesService } from '../businesses/businesses.service';
 import { ConfigService } from '@nestjs/config';
 
 @ApiTags('billing')
@@ -13,6 +18,7 @@ import { ConfigService } from '@nestjs/config';
 export class BillingController {
   constructor(
     private readonly billingService: BillingService,
+    private readonly businessesService: BusinessesService,
     private readonly config: ConfigService,
   ) {}
 
@@ -23,7 +29,9 @@ export class BillingController {
   async initUpgrade(
     @Body() body: { businessId: string; planId: string; planName: string; amountCents: number },
     @Req() req: any,
+    @CurrentUser() owner: User,
   ) {
+    await this.businessesService.assertOwner(body.businessId, owner.id);
     const user = req.user;
     return this.billingService.initUpgrade({
       userId: user.userId,
@@ -59,7 +67,8 @@ export class BillingController {
 
   /** Admin: list all invoices */
   @Get('admin/invoices')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   allInvoices(@Query('page') page?: string) {
     return this.billingService.allInvoices(page ? parseInt(page, 10) : 1);
@@ -67,7 +76,8 @@ export class BillingController {
 
   /** Admin: manual plan upgrade */
   @Post('admin/upgrade')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   manualUpgrade(
