@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { MembershipPlan, MembershipPlanName } from './entities/membership-plan.entity';
@@ -12,8 +12,42 @@ export class MembershipService {
     private dataSource: DataSource,
   ) {}
 
-  findAllPlans() {
-    return this.plansRepo.find({ where: { isActive: true }, order: { sortOrder: 'ASC' } });
+  async findAllPlans() {
+    const plans = await this.plansRepo.find({ where: { isActive: true }, order: { sortOrder: 'ASC' } });
+    // numeric columns come back as strings from pg — normalise to numbers for the client
+    return plans.map((p) => ({
+      id: p.id,
+      name: p.name,
+      displayName: p.displayName,
+      priceMonthly: Number(p.priceMonthly),
+      priceYearly: Number(p.priceYearly),
+      priceOnetime: Number(p.priceOnetime),
+      maxProducts: p.maxProducts,
+      maxServices: p.maxServices,
+      maxImages: p.maxImages,
+      maxCampaigns: p.maxCampaigns,
+      canUploadVideo: p.canUploadVideo,
+      canAddFiles: p.canAddFiles,
+      canUseWhatsapp: p.canUseWhatsapp,
+      canAppearFeatured: p.canAppearFeatured,
+      analyticsDays: p.analyticsDays,
+      sortOrder: p.sortOrder,
+    }));
+  }
+
+  // ──── Admin plan management ───────────────────────────────────────────────
+
+  findAllPlansAdmin() {
+    return this.plansRepo.find({ order: { sortOrder: 'ASC' } });
+  }
+
+  async updatePlan(id: number, dto: Partial<MembershipPlan>): Promise<MembershipPlan> {
+    const plan = await this.plansRepo.findOne({ where: { id } });
+    if (!plan) throw new NotFoundException('Plan not found');
+    // name is the stable enum key — never editable from the panel
+    const { id: _ignore, name: _name, ...editable } = dto as Record<string, unknown>;
+    Object.assign(plan, editable);
+    return this.plansRepo.save(plan);
   }
 
   async getOrCreateSubscription(businessId: string): Promise<MembershipSubscription> {

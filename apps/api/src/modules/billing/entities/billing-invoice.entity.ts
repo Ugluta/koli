@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { BillingCycle } from '../../../common/enums/billing-cycle.enum';
 
 export enum PaymentStatus { PENDING = 'pending', PAID = 'paid', FAILED = 'failed', REFUNDED = 'refunded', CANCELLED = 'cancelled' }
 export enum PaymentProvider { IYZICO = 'iyzico', STRIPE = 'stripe', MANUAL = 'manual' }
@@ -13,6 +14,7 @@ export class BillingInvoice {
   @Column({ name: 'provider_payment_id', nullable: true, type: 'varchar' }) providerPaymentId: string | null;
   @Column({ name: 'provider_order_id', nullable: true, type: 'varchar' }) providerOrderId: string | null;
   @Column({ name: 'amount_cents' }) amountCents: number;
+  @Column({ name: 'billing_cycle', type: 'enum', enum: BillingCycle, default: BillingCycle.MONTHLY }) billingCycle: BillingCycle;
   @Column({ length: 3, default: 'TRY' }) currency: string;
   @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING }) status: PaymentStatus;
   @Column({ name: 'period_start', type: 'date', nullable: true }) periodStart: string | null;

@@ -14,6 +14,7 @@ export class MembershipPlan {
   @Column({ name: 'display_name' }) displayName: string;
   @Column({ name: 'price_monthly', type: 'numeric', precision: 10, scale: 2, default: 0 }) priceMonthly: number;
   @Column({ name: 'price_yearly', type: 'numeric', precision: 10, scale: 2, default: 0 }) priceYearly: number;
+  @Column({ name: 'price_onetime', type: 'numeric', precision: 10, scale: 2, default: 0 }) priceOnetime: number;
   @Column({ name: 'max_products', default: 5 }) maxProducts: number;
   @Column({ name: 'max_services', default: 3 }) maxServices: number;
   @Column({ name: 'max_images', default: 10 }) maxImages: number;

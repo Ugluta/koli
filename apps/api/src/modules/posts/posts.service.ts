@@ -1,8 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Post, PostStatus, PostType } from './entities/post.entity';
 import { CreatePostDto, UpdatePostDto, PostListQueryDto } from './dto/post.dto';
+import { UserRole } from '../auth/entities/user.entity';
+
+interface Requester { id: string; role: UserRole }
 
 function slugify(text: string, suffix = ''): string {
   const base = text.toLowerCase()
@@ -125,9 +128,17 @@ export class PostsService {
     });
   }
 
-  async update(id: string, dto: UpdatePostDto): Promise<Post> {
+  /** Author or super-admin only. */
+  private assertCanManage(post: Post, requester: Requester): void {
+    if (post.authorId !== requester.id && requester.role !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Bu içerik üzerinde yetkiniz yok.');
+    }
+  }
+
+  async update(id: string, dto: UpdatePostDto, requester: Requester): Promise<Post> {
     const post = await this.postsRepo.findOne({ where: { id } });
     if (!post) throw new NotFoundException('Post not found');
+    this.assertCanManage(post, requester);
 
     if (dto.status === PostStatus.PUBLISHED && !post.publishedAt) {
       post.publishedAt = new Date();
@@ -150,8 +161,39 @@ export class PostsService {
     return this.postsRepo.save(post);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, requester: Requester): Promise<void> {
+    const post = await this.postsRepo.findOne({ where: { id } });
+    if (!post) throw new NotFoundException('Post not found');
+    this.assertCanManage(post, requester);
     await this.postsRepo.softDelete(id);
+  }
+
+  // ──── Admin moderation ────────────────────────────────────────────────────
+
+  async findAllForAdmin(opts: { status?: PostStatus; type?: PostType; page?: number; limit?: number }) {
+    const page = opts.page ?? 1;
+    const limit = Math.min(opts.limit ?? 20, 100);
+    const where: Record<string, unknown> = {};
+    if (opts.status) where.status = opts.status;
+    if (opts.type) where.postType = opts.type;
+
+    const [data, total] = await this.postsRepo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return { data, meta: { total, page, limit } };
+  }
+
+  async setStatus(id: string, status: PostStatus): Promise<Post> {
+    const post = await this.postsRepo.findOne({ where: { id } });
+    if (!post) throw new NotFoundException('Post not found');
+    post.status = status;
+    if (status === PostStatus.PUBLISHED && !post.publishedAt) {
+      post.publishedAt = new Date();
+    }
+    return this.postsRepo.save(post);
   }
 
   async incrementViewCount(id: string): Promise<void> {

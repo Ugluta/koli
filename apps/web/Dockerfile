@@ -23,6 +23,10 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Next standalone sunucusu tüm arayüzlere bağlansın ki Docker port eşlemesi
+# (host 3001 -> container 3000) çalışsın.
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
 RUN addgroup -S koli && adduser -S koli -G koli
 
@@ -35,6 +39,6 @@ USER koli
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD wget -qO- http://localhost:3000/api/health || exit 1
+  CMD wget -qO- http://localhost:3000/ || exit 1
 
 CMD ["node", "server.js"]
