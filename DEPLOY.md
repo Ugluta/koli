@@ -1,8 +1,59 @@
 # Koli — Yayına Alma (Deployment)
 
-Bu proje tek sunucuda Docker Compose ile çalışacak şekilde tasarlandı.
-Web (Next.js) ve API (NestJS) imajları sunucuda `--build` ile üretilir; ayrıca
-Postgres, Redis, Meilisearch, MinIO ve otomatik DB yedeği servisleri gelir.
+İki yöntem var. Daha önce başka projeleri PM2 ile (`git pull && npm run build &&
+pm2 restart`) yayına aldıysan **Seçenek A** sana tanıdık gelecek. Sıfırdan,
+servisleriyle birlikte konteyner istiyorsan **Seçenek B**.
+
+> Koli bir **monorepo**'dur: `apps/api` (NestJS, port 4000) + `apps/web`
+> (Next.js, port 3001). Tek Next app'ten farklı olarak PM2 **iki** süreç çalıştırır.
+
+---
+
+## Seçenek A — PM2 (bare-metal VPS, senin akışın)
+
+### A.1 Önkoşullar
+- Node.js 20+, `npm`, `pm2` (`npm i -g pm2`)
+- Çalışan **PostgreSQL** (zorunlu). Arama için **Meilisearch**, dosya için
+  **MinIO/S3**, oturum/cache için **Redis** (opsiyonel ama önerilir) — bunları
+  sistemde veya ayrı docker container olarak çalıştırabilirsin.
+- 80/443 için ters proxy (`nginx.conf.example`)
+
+### A.2 İlk kurulum
+```bash
+cd /var/www/koli                 # klasör adını kendine göre değiştir
+git clone <repo-url> .
+
+# Ortam değişkenleri (her app kendi dosyasını okur):
+cp apps/api/.env.example apps/api/.env          # DATABASE_URL, JWT_SECRET, MEILI/MINIO/SMTP,
+                                                # GOOGLE_PLACES_API_KEY, SITE_URL, ALLOWED_ORIGINS...
+cp apps/web/.env.local.example apps/web/.env.local   # NEXT_PUBLIC_API_URL=https://site/api/v1
+
+npm install
+npm run build                    # turbo: hem api (nest build) hem web (next build)
+pm2 start ecosystem.config.js
+pm2 save                         # sunucu reboot'unda otomatik kalkması için: pm2 startup
+```
+
+- DB migration'ları **API açılışında otomatik** koşar (`migrationsRun: true`).
+- `koli-api` → :4000, `koli-web` → :3001 (nginx bunlara yönlendirir).
+
+### A.3 Sonraki güncellemeler (senin alışık olduğun tek satır)
+```bash
+cd /var/www/koli && git pull && npm install && npm run build && pm2 restart ecosystem.config.js --update-env
+```
+
+> `NEXT_PUBLIC_API_URL` web'e **build sırasında** gömülür; değiştirirsen
+> `npm run build` tekrar gerekir (yukarıdaki komut zaten build ediyor).
+
+Süper admin atama, nginx ve yedekler için aşağıdaki **ortak adımlara** (bu
+dosyanın devamı: "Süper admin kullanıcısı", `nginx.conf.example`, "Yedekler") bak.
+
+---
+
+## Seçenek B — Docker Compose (tek komutla servisleriyle)
+
+Web ve API imajları sunucuda `--build` ile üretilir; Postgres, Redis,
+Meilisearch, MinIO ve otomatik DB yedeği servisleri de gelir.
 
 ## 1. Sunucu önkoşulları
 
