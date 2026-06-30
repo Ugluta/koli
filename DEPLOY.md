@@ -48,12 +48,18 @@ Seed yalnızca girişi kapalı bir editör hesabı oluşturur. Yönetim paneline
 (`/admin`) erişmek için bir kullanıcıyı `super_admin` yapın:
 
 ```bash
+# Siteden normal kayıt olduktan sonra:
 docker compose -f docker-compose.prod.yml exec postgres \
   psql -U koli -d koli -c \
-  "UPDATE users SET role='super_admin' WHERE email='SIZIN_EPOSTANIZ';"
+  "UPDATE users SET role='super_admin', email_verified=true, is_verified=true
+   WHERE email='SIZIN_EPOSTANIZ';"
 ```
 
-(Önce siteden normal kayıt olup e-postanızı doğrulayın, sonra bu komutu çalıştırın.)
+> SMTP'yi henüz kurmadıysanız e-posta doğrulaması yapamazsınız; yukarıdaki komut
+> `email_verified`'ı da true yaptığı için doğrulama gerekmeden giriş yapabilirsiniz.
+
+> MinIO `koli-media` bucket'ı `minio-init` servisi tarafından otomatik oluşturulur
+> ve public-read yapılır; ayrı bir adım gerekmez.
 
 ## 4. Otomatik deploy (GitHub Actions)
 
