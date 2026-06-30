@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete, Param, Query, Body,
-  UseGuards, Req, HttpCode, HttpStatus, ParseUUIDPipe,
+  UseGuards, HttpCode, HttpStatus, ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PostsService } from './posts.service';
@@ -72,15 +72,16 @@ export class PostsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePostDto,
+    @CurrentUser() user: User,
   ) {
-    return this.postsService.update(id, dto);
+    return this.postsService.update(id, dto, { id: user.id, role: user.role });
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.postsService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.postsService.remove(id, { id: user.id, role: user.role });
   }
 }
